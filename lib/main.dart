@@ -1,8 +1,14 @@
+import 'package:fitlife/controllers/progress_controoler.dart';
 import 'package:flutter/material.dart';
-import 'views/home_page.dart';
 import 'package:get/get.dart';
+import 'views/home_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize controller before app runs (for SharedPreferences data)
+  Get.put(ProgressController());
+
   runApp(FitLifeApp());
 }
 
@@ -13,7 +19,8 @@ class FitLifeApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'FitLife',
       theme: ThemeData(
-        primarySwatch: Colors.purple,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.purple),
+        useMaterial3: true,
       ),
       home: HomePage(),
     );

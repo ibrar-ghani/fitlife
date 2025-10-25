@@ -1,78 +1,108 @@
-import 'package:fitlife/controllers/progress_controoler.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+class ProgressPage extends StatefulWidget {
+  @override
+  _ProgressPageState createState() => _ProgressPageState();
+}
 
-class ProgressPage extends StatelessWidget {
-  final ProgressController controller = Get.put(ProgressController());
-  final TextEditingController weightController = TextEditingController();
+class _ProgressPageState extends State<ProgressPage> {
+  final TextEditingController _progressController = TextEditingController();
+  List<double> _progressData = [];
 
-  ProgressPage({super.key});
+  @override
+  void initState() {
+    super.initState();
+    _loadProgressData();
+  }
+
+  Future<void> _loadProgressData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedData = prefs.getStringList('progressData') ?? [];
+    setState(() {
+      _progressData = savedData.map((e) => double.parse(e)).toList();
+    });
+  }
+
+  Future<void> _saveProgressData() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setStringList(
+        'progressData', _progressData.map((e) => e.toString()).toList());
+  }
+
+  void _addProgress() {
+    if (_progressController.text.isNotEmpty) {
+      final progress = double.tryParse(_progressController.text);
+      if (progress != null) {
+        setState(() {
+          _progressData.add(progress);
+        });
+        _saveProgressData();
+        _progressController.clear();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Progress & Motivation")),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Obx(() => Text(
-                  controller.quote.value,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontStyle: FontStyle.italic,
-                    color: Colors.deepPurple,
-                  ),
-                  textAlign: TextAlign.center,
-                )),
+            const Text(
+              'Daily Progress Tracker',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 20),
             Expanded(
-              child: Obx(() {
-                if (controller.progressList.isEmpty) {
-                  return const Center(child: Text("No progress yet"));
-                }
-                return LineChart(
-                  LineChartData(
-                    titlesData: FlTitlesData(show: false),
-                    borderData: FlBorderData(show: false),
-                    lineBarsData: [
-                      LineChartBarData(
-                        spots: controller.progressList
-                            .asMap()
-                            .entries
-                            .map((e) => FlSpot(
-                                e.key.toDouble(), e.value.weight.toDouble()))
-                            .toList(),
-                        isCurved: true,
-                        dotData: FlDotData(show: true),
-                      )
-                    ],
-                  ),
-                );
-              }),
+              child: _progressData.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No progress yet. Add your first entry!',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
+                  : LineChart(
+                      LineChartData(
+                        gridData: FlGridData(show: true),
+                        titlesData: FlTitlesData(show: true),
+                        borderData: FlBorderData(show: true),
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: _progressData.asMap().entries.map((e) {
+                              return FlSpot(e.key.toDouble(), e.value);
+                            }).toList(),
+                            isCurved: true,
+                            color: Colors.purple,
+                            dotData: FlDotData(show: true),
+                            belowBarData: BarAreaData(show: false),
+                          ),
+                        ],
+                      ),
+                    ),
             ),
+            const SizedBox(height: 20),
             TextField(
-              controller: weightController,
+              controller: _progressController,
+              keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: "Enter today's weight (kg)",
+                labelText: 'Enter today\'s progress (e.g., 1.5 km)',
                 border: OutlineInputBorder(),
               ),
-              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: () {
-                final weight = double.tryParse(weightController.text);
-                if (weight != null) {
-                  controller.addProgress(weight);
-                  weightController.clear();
-                } else {
-                  Get.snackbar("Error", "Please enter a valid number");
-                }
-              },
-              child: const Text("Save Progress"),
+              onPressed: _addProgress,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+              ),
+              child: const Text(
+                'Add Progress',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
