@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ProgressPage extends StatefulWidget {
   @override
-  _ProgressPageState createState() => _ProgressPageState();
+  State<ProgressPage> createState() => _ProgressPageState();
 }
 
 class _ProgressPageState extends State<ProgressPage> {
@@ -27,8 +27,10 @@ class _ProgressPageState extends State<ProgressPage> {
 
   Future<void> _saveProgressData() async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setStringList(
-        'progressData', _progressData.map((e) => e.toString()).toList());
+    await prefs.setStringList(
+      'progressData',
+      _progressData.map((e) => e.toString()).toList(),
+    );
   }
 
   void _addProgress() {
@@ -44,8 +46,15 @@ class _ProgressPageState extends State<ProgressPage> {
     }
   }
 
+  double _calculateAverage() {
+    if (_progressData.isEmpty) return 0;
+    return _progressData.reduce((a, b) => a + b) / _progressData.length;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final average = _calculateAverage();
+
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -66,8 +75,30 @@ class _ProgressPageState extends State<ProgressPage> {
                     )
                   : LineChart(
                       LineChartData(
+                        lineTouchData: LineTouchData(
+                          enabled: true,
+                          touchTooltipData: LineTouchTooltipData(
+                            tooltipBorder: BorderSide(color: Colors.purple.withOpacity(0.8)),
+                            tooltipPadding: const EdgeInsets.all(8),
+                            getTooltipItems: (touchedSpots) {
+                              return touchedSpots.map((spot) {
+                                return LineTooltipItem(
+                                  'Day ${spot.x.toInt() + 1}\nProgress: ${spot.y.toStringAsFixed(1)}',
+                                  const TextStyle(color: Colors.white),
+                                );
+                              }).toList();
+                            },
+                          ),
+                        ),
                         gridData: FlGridData(show: true),
-                        titlesData: FlTitlesData(show: true),
+                        titlesData: FlTitlesData(
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: true),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: true),
+                          ),
+                        ),
                         borderData: FlBorderData(show: true),
                         lineBarsData: [
                           LineChartBarData(
@@ -76,11 +107,28 @@ class _ProgressPageState extends State<ProgressPage> {
                             }).toList(),
                             isCurved: true,
                             color: Colors.purple,
+                            barWidth: 3,
                             dotData: FlDotData(show: true),
-                            belowBarData: BarAreaData(show: false),
+                            belowBarData: BarAreaData(
+                              show: true,
+                              color: Colors.purple.withOpacity(0.2),
+                            ),
+                          ),
+                          // Weekly Average Line
+                          LineChartBarData(
+                            spots: List.generate(
+                              _progressData.length,
+                              (index) => FlSpot(index.toDouble(), average),
+                            ),
+                            isCurved: false,
+                            color: Colors.green,
+                            barWidth: 2,
+                            dashArray: [5, 5],
+                            dotData: FlDotData(show: false),
                           ),
                         ],
                       ),
+                      duration: const Duration(milliseconds: 600),
                     ),
             ),
             const SizedBox(height: 20),
@@ -88,7 +136,7 @@ class _ProgressPageState extends State<ProgressPage> {
               controller: _progressController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Enter today\'s progress (e.g., 1.5 km)',
+                labelText: 'Enter today\'s progress (e.g., 2.5 km)',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -97,11 +145,12 @@ class _ProgressPageState extends State<ProgressPage> {
               onPressed: _addProgress,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.purple,
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
               ),
               child: const Text(
                 'Add Progress',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.white, fontSize: 16),
               ),
             ),
           ],
