@@ -10,6 +10,7 @@ class ProgressPage extends StatefulWidget {
 class _ProgressPageState extends State<ProgressPage> {
   final TextEditingController _progressController = TextEditingController();
   List<double> _progressData = [];
+  String _selectedFilter = "All Time";
 
   @override
   void initState() {
@@ -46,14 +47,25 @@ class _ProgressPageState extends State<ProgressPage> {
     }
   }
 
-  double _calculateAverage() {
-    if (_progressData.isEmpty) return 0;
-    return _progressData.reduce((a, b) => a + b) / _progressData.length;
+  List<double> _getFilteredData() {
+    if (_selectedFilter == "Last 7 Days") {
+      return _progressData.takeLast(7);
+    } else if (_selectedFilter == "Last 30 Days") {
+      return _progressData.takeLast(30);
+    }
+    return _progressData;
+  }
+
+  double _calculateAverage(List<double> data) {
+    if (data.isEmpty) return 0;
+    return data.reduce((a, b) => a + b) / data.length;
   }
 
   @override
   Widget build(BuildContext context) {
-    final average = _calculateAverage();
+    final filteredData = _getFilteredData();
+    final average = _calculateAverage(filteredData);
+    final maxProgress = filteredData.isEmpty ? 0 : filteredData.reduce((a, b) => a > b ? a : b);
 
     return Scaffold(
       body: Padding(
@@ -64,45 +76,69 @@ class _ProgressPageState extends State<ProgressPage> {
               'Daily Progress Tracker',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 10),
+            // Dropdown filter
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.filter_alt, color: Colors.purple),
+                const SizedBox(width: 10),
+                DropdownButton<String>(
+                  value: _selectedFilter,
+                  items: const [
+                    DropdownMenuItem(value: "All Time", child: Text("All Time")),
+                    DropdownMenuItem(value: "Last 7 Days", child: Text("Last 7 Days")),
+                    DropdownMenuItem(value: "Last 30 Days", child: Text("Last 30 Days")),
+                  ],
+                  onChanged: (value) {
+                    setState(() => _selectedFilter = value!);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            // Summary card
+            Card(
+              color: Colors.purple.shade50,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Text(
+                      'Summary (${_selectedFilter})',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildSummaryItem('Entries', filteredData.length.toString()),
+                        _buildSummaryItem('Average', '${average.toStringAsFixed(1)}'),
+                        _buildSummaryItem('Max', '${maxProgress.toStringAsFixed(1)}'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 20),
             Expanded(
-              child: _progressData.isEmpty
+              child: filteredData.isEmpty
                   ? const Center(
-                      child: Text(
-                        'No progress yet. Add your first entry!',
-                        style: TextStyle(color: Colors.grey),
-                      ),
+                      child: Text('No data available for this range.'),
                     )
                   : LineChart(
                       LineChartData(
-                        lineTouchData: LineTouchData(
-                          enabled: true,
-                          touchTooltipData: LineTouchTooltipData(
-                            tooltipBorder: BorderSide(color: Colors.purple.withOpacity(0.8)),
-                            tooltipPadding: const EdgeInsets.all(8),
-                            getTooltipItems: (touchedSpots) {
-                              return touchedSpots.map((spot) {
-                                return LineTooltipItem(
-                                  'Day ${spot.x.toInt() + 1}\nProgress: ${spot.y.toStringAsFixed(1)}',
-                                  const TextStyle(color: Colors.white),
-                                );
-                              }).toList();
-                            },
-                          ),
-                        ),
                         gridData: FlGridData(show: true),
                         titlesData: FlTitlesData(
-                          leftTitles: AxisTitles(
-                            sideTitles: SideTitles(showTitles: true),
-                          ),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(showTitles: true),
-                          ),
+                          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
+                          bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
                         ),
                         borderData: FlBorderData(show: true),
                         lineBarsData: [
                           LineChartBarData(
-                            spots: _progressData.asMap().entries.map((e) {
+                            spots: filteredData.asMap().entries.map((e) {
                               return FlSpot(e.key.toDouble(), e.value);
                             }).toList(),
                             isCurved: true,
@@ -114,21 +150,8 @@ class _ProgressPageState extends State<ProgressPage> {
                               color: Colors.purple.withOpacity(0.2),
                             ),
                           ),
-                          // Weekly Average Line
-                          LineChartBarData(
-                            spots: List.generate(
-                              _progressData.length,
-                              (index) => FlSpot(index.toDouble(), average),
-                            ),
-                            isCurved: false,
-                            color: Colors.green,
-                            barWidth: 2,
-                            dashArray: [5, 5],
-                            dotData: FlDotData(show: false),
-                          ),
                         ],
                       ),
-                      duration: const Duration(milliseconds: 600),
                     ),
             ),
             const SizedBox(height: 20),
@@ -145,8 +168,7 @@ class _ProgressPageState extends State<ProgressPage> {
               onPressed: _addProgress,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.purple,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
               ),
               child: const Text(
                 'Add Progress',
@@ -158,4 +180,18 @@ class _ProgressPageState extends State<ProgressPage> {
       ),
     );
   }
+
+  Widget _buildSummaryItem(String title, String value) {
+    return Column(
+      children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontSize: 16)),
+      ],
+    );
+  }
+}
+
+extension TakeLastExtension<E> on List<E> {
+  List<E> takeLast(int n) => length <= n ? this : sublist(length - n);
 }
