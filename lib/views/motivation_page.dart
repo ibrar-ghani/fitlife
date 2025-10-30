@@ -1,32 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../controllers/quotes_controller.dart';
 
 class MotivationPage extends StatelessWidget {
-  final List<String> quotes = [
-    "Push yourself, because no one else is going to do it for you.",
-    "It always seems impossible until it’s done.",
-    "Don’t limit your challenges — challenge your limits.",
-    "You don’t have to be extreme, just consistent.",
-  ];
+  final QuotesController controller = Get.put(QuotesController());
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: quotes.length,
-        itemBuilder: (context, index) {
-          return Card(
-            color: Colors.purple.shade50,
-            margin: const EdgeInsets.symmetric(vertical: 10),
-            child: ListTile(
-              leading: const Icon(Icons.favorite, color: Colors.purple),
-              title: Text(
-                quotes[index],
-                style: const TextStyle(fontSize: 16),
-              ),
-            ),
-          );
-        },
+      backgroundColor: Colors.purple.shade50,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Obx(() => Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    '💬 Daily Motivation',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.purple,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      controller.dailyQuote.value,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: controller.refreshQuote,
+                    icon: const Icon(Icons.refresh, color: Colors.white),
+                    label: const Text('New Quote',style: TextStyle(color: Colors.white),),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              )),
+        ),
       ),
     );
   }
