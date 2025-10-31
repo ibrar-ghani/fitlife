@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'progress_page.dart';
+import 'progress/progress_page.dart';
 import 'motivation_page.dart';
 
 class HomePage extends StatefulWidget {
