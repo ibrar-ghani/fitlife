@@ -1,3 +1,4 @@
+import 'package:fitlife/controllers/motivation_controller.dart';
 import 'package:fitlife/controllers/progress_controoler.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -8,6 +9,7 @@ void main() async {
 
   // Initialize controller before app runs (for SharedPreferences data)
   Get.put(ProgressController());
+  Get.put(MotivationController());
 
   runApp(FitLifeApp());
 }

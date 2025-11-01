@@ -1,67 +1,86 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/quotes_controller.dart';
+import '../controllers/motivation_controller.dart';
 
 class MotivationPage extends StatelessWidget {
-  final QuotesController controller = Get.put(QuotesController());
+  final MotivationController controller = Get.put(MotivationController());
+
+  MotivationPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.purple.shade50,
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Obx(() => Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    '💬 Daily Motivation',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.purple,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  Container(
-                    padding: const EdgeInsets.all(20),
+      appBar: AppBar(
+        title: const Text("Motivation"),
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          const SizedBox(height: 10),
+
+          // Title
+          const Text(
+            "Daily Motivation",
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Quote List (Scrollable)
+          Expanded(
+            child: Obx(() {
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: controller.quotes.length,
+                itemBuilder: (context, index) {
+                  final quote = controller.quotes[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
+                      color: Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black26,
                           blurRadius: 8,
-                          offset: Offset(0, 4),
+                          spreadRadius: 1,
+                          color: Colors.black.withOpacity(0.08),
                         ),
                       ],
                     ),
                     child: Text(
-                      controller.dailyQuote.value,
-                      textAlign: TextAlign.center,
+                      quote,
                       style: const TextStyle(
                         fontSize: 18,
-                        fontStyle: FontStyle.italic,
-                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                        height: 1.4,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: controller.refreshQuote,
-                    icon: const Icon(Icons.refresh, color: Colors.white),
-                    label: const Text('New Quote',style: TextStyle(color: Colors.white),),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ],
-              )),
-        ),
+                  );
+                },
+              );
+            }),
+          ),
+
+          // New Quote Button
+          Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: ElevatedButton(
+              onPressed: controller.addRandomQuote,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'New Quote',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
