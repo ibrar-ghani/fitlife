@@ -24,8 +24,8 @@ class ProgressPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            WaterTrackerCard(),
-            SizedBox(height: 16),
+           // WaterTrackerCard(),
+           // SizedBox(height: 16),
             GoalCard(),
             SizedBox(height: 16),
             BadgesRow(),

@@ -38,7 +38,7 @@ class GoalCard extends StatelessWidget {
                     }
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
-                  child: const Text("Save"),
+                  child: const Text("Save", style: TextStyle(color: Colors.white)),
                 )
               ],
             ),
