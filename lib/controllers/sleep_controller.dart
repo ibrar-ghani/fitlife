@@ -20,24 +20,40 @@ class SleepController extends GetxController {
   }
 
   Future<void> addSleep(DateTime bed, DateTime wake, int quality) async {
-    final duration = wake.difference(bed).inMinutes / 60;
-    sleepHistory.add(SleepEntry(
-      bedTime: bed,
-      wakeTime: wake,
-      hours: duration,
-      quality: quality,
-    ));
+    // ✅ Handle sleep across midnight (e.g. 23:00 to 07:00)
+    if (wake.isBefore(bed)) {
+      wake = wake.add(const Duration(days: 1));
+    }
 
+    final hours = wake.difference(bed).inMinutes / 60;
+
+    sleepHistory.add(
+      SleepEntry(
+        bedTime: bed,
+        wakeTime: wake,
+        hours: hours,
+        quality: quality,
+      ),
+    );
+
+    await _save();
+  }
+
+  Future<void> deleteSleep(int index) async {
+    sleepHistory.removeAt(index);
+    await _save();
+  }
+
+  double averageSleep() {
+    if (sleepHistory.isEmpty) return 0.0;
+    return sleepHistory.fold(0.0, (sum, e) => sum + e.hours) / sleepHistory.length;
+  }
+
+  Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(
       'sleep_history',
       sleepHistory.map((e) => jsonEncode(e.toJson())).toList(),
     );
-  }
-
-  double averageSleep() {
-    if (sleepHistory.isEmpty) return 0.0;
-    return sleepHistory.map((e) => e.hours).reduce((a, b) => a + b) /
-        sleepHistory.length;
   }
 }
