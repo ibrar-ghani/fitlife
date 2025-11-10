@@ -1,3 +1,4 @@
+import 'package:fitlife/views/dashboard/dashboard_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/bottom_nav_controller.dart';
@@ -10,6 +11,7 @@ class HomePage extends StatelessWidget {
   final BottomNavController navController = Get.put(BottomNavController());
 
   final pages = [
+    DashboardPage(),
     ProgressPage(),
     MotivationPage(),
     WaterPage(),
@@ -26,6 +28,10 @@ class HomePage extends StatelessWidget {
             onTap: navController.changeTab,
             type: BottomNavigationBarType.fixed, // ✅ IMPORTANT for 4 tabs
             items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard),
+                label: 'Dashboard',
+              ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.show_chart),
                 label: 'Progress',
