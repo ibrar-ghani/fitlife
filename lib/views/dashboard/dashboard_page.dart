@@ -4,12 +4,14 @@ import '../../controllers/sleep_controller.dart';
 import '../../controllers/water_controller.dart';
 import '../../controllers/steps_controller.dart';
 import '../../controllers/motivation_controller.dart';
+import '../../controllers/auth_controller.dart'; // ✅ Added
 
 class DashboardPage extends StatelessWidget {
   final sleep = Get.put(SleepController());
   final water = Get.put(WaterController());
   final steps = Get.put(StepsController());
   final motivation = Get.put(MotivationController());
+  final auth = Get.put(AuthController()); // ✅ Added
 
   @override
   Widget build(BuildContext context) {
@@ -29,17 +31,42 @@ class DashboardPage extends StatelessWidget {
             // Greeting
             Align(
               alignment: Alignment.centerLeft,
-              child: Text("Hello Ibrar 👋",
+              child: Text(
+                "Hello Ibrar 👋",
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
             ),
             SizedBox(height: 4),
             Align(
               alignment: Alignment.centerLeft,
-              child: Text("Here’s your health summary for today.",
+              child: Text(
+                "Here’s your health summary for today.",
                 style: TextStyle(color: Colors.black54),
               ),
             ),
+
+            SizedBox(height: 8),
+
+            // ✅ Firebase Connection Status
+            Obx(() {
+              return Row(
+                children: [
+                  Icon(
+                    Icons.cloud,
+                    color: auth.isFirebaseConnected.value ? Colors.green : Colors.red,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    auth.isFirebaseConnected.value ? "Firebase Connected" : "Offline",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: auth.isFirebaseConnected.value ? Colors.green : Colors.red,
+                    ),
+                  ),
+                ],
+              );
+            }),
+
             SizedBox(height: 20),
 
             // Stats Grid
@@ -47,7 +74,8 @@ class DashboardPage extends StatelessWidget {
               physics: NeverScrollableScrollPhysics(),
               shrinkWrap: true,
               gridDelegate:
-              SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 16, crossAxisSpacing: 16),
+                  SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2, mainAxisSpacing: 16, crossAxisSpacing: 16),
               children: [
                 _statCard(Icons.nightlight_round, "Sleep", "${sleep.averageSleep().toStringAsFixed(1)} hrs", Colors.indigo),
                 _statCard(Icons.local_drink, "Water", "${water.todayAmount} ml", Colors.blue),
@@ -60,19 +88,20 @@ class DashboardPage extends StatelessWidget {
 
             // Quote Section
             Obx(() => Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade100,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                motivation.quotes.isEmpty
-                    ? "Loading motivational quote..."
-                    : motivation.quotes[DateTime.now().day % motivation.quotes.length],
-                style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.orange.shade900),
-                textAlign: TextAlign.center,
-              ),
-            )),
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade100,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    motivation.quotes.isEmpty
+                        ? "Loading motivational quote..."
+                        : motivation.quotes[DateTime.now().day % motivation.quotes.length],
+                    style: TextStyle(
+                        fontSize: 16, fontStyle: FontStyle.italic, color: Colors.orange.shade900),
+                    textAlign: TextAlign.center,
+                  ),
+                )),
           ],
         ),
       ),

@@ -1,18 +1,29 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
+  // Observable to track Firebase connection status
+  RxBool isFirebaseConnected = false.obs;
   // Observable Firebase User
   Rxn<User> firebaseUser = Rxn<User>();
-
+ 
   @override
   void onInit() {
     super.onInit();
-
+    checkFirebaseConnection();
     // Listen to login/logout
     firebaseUser.bindStream(_auth.authStateChanges());
+  }
+
+   void checkFirebaseConnection() async {
+    try {
+      await Firebase.apps; // Fetch initialized apps
+      isFirebaseConnected.value = true;
+    } catch (e) {
+      isFirebaseConnected.value = false;
+    }
   }
 
   // Getter for user
