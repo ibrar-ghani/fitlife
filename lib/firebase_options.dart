@@ -46,7 +46,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '820642764441',
     projectId: 'fitlife-3668f',
     authDomain: 'fitlife-3668f.firebaseapp.com',
-    storageBucket: 'fitlife-3668f.firebasestorage.app',
+    storageBucket: 'fitlife-3668f.appspot.com',
     measurementId: 'G-1F29HW9CG8',
   );
 
@@ -55,7 +55,7 @@ class DefaultFirebaseOptions {
     appId: '1:820642764441:android:e407abe914a22b03ddca08',
     messagingSenderId: '820642764441',
     projectId: 'fitlife-3668f',
-    storageBucket: 'fitlife-3668f.firebasestorage.app',
+    storageBucket: 'fitlife-3668f.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -63,7 +63,7 @@ class DefaultFirebaseOptions {
     appId: '1:820642764441:ios:19542e7beb7deeeeddca08',
     messagingSenderId: '820642764441',
     projectId: 'fitlife-3668f',
-    storageBucket: 'fitlife-3668f.firebasestorage.app',
+    storageBucket: 'fitlife-3668f.appspot.com',
     iosBundleId: 'com.example.fitlife',
   );
 
@@ -72,7 +72,7 @@ class DefaultFirebaseOptions {
     appId: '1:820642764441:ios:19542e7beb7deeeeddca08',
     messagingSenderId: '820642764441',
     projectId: 'fitlife-3668f',
-    storageBucket: 'fitlife-3668f.firebasestorage.app',
+    storageBucket: 'fitlife-3668f.appspot.com',
     iosBundleId: 'com.example.fitlife',
   );
 
@@ -82,7 +82,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '820642764441',
     projectId: 'fitlife-3668f',
     authDomain: 'fitlife-3668f.firebaseapp.com',
-    storageBucket: 'fitlife-3668f.firebasestorage.app',
+    storageBucket: 'fitlife-3668f.appspot.com',
     measurementId: 'G-LEV0CCJH40',
   );
 }
