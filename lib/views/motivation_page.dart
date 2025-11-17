@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:chewie/chewie.dart';
+import 'package:video_player/video_player.dart';
 import '../controllers/motivation_controller.dart';
 
 class MotivationPage extends StatelessWidget {
@@ -10,78 +12,74 @@ class MotivationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Motivation"),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 10),
+      body: Obx(() {
+        if (controller.isLoading.value && controller.quotes.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          // Title
-          const Text(
-            "Daily Motivation",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
+        return PageView.builder(
+          scrollDirection: Axis.vertical,
+          itemCount: controller.videoLinks.length,
+          itemBuilder: (context, index) {
+            return FutureBuilder<ChewieController>(
+              future: _initVideoController(index),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          const SizedBox(height: 10),
-
-          // Quote List (Scrollable)
-          Expanded(
-            child: Obx(() {
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: controller.quotes.length,
-                itemBuilder: (context, index) {
-                  final quote = controller.quotes[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                          color: Colors.black.withOpacity(0.08),
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Chewie(controller: snapshot.data!),
+                    Positioned(
+                      bottom: 50,
+                      left: 16,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.black38,
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ],
-                    ),
-                    child: Text(
-                      quote,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        height: 1.4,
+                        child: Text(
+                          controller.quotes.isNotEmpty
+                              ? controller.quotes[index % controller.quotes.length]
+                              : "Stay motivated!",
+                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
-                  );
-                },
-              );
-            }),
-          ),
-
-          // New Quote Button
-          Padding(
-            padding: const EdgeInsets.only(bottom: 20),
-            child: ElevatedButton(
-              onPressed: controller.addRandomQuote,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'New Quote',
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
-            ),
-          ),
-        ],
-      ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      }),
     );
+  }
+
+  Future<ChewieController> _initVideoController(int index) async {
+    if (controller.chewieControllers.containsKey(index)) {
+      return controller.chewieControllers[index]!;
+    }
+
+    final videoController = VideoPlayerController.network(controller.videoLinks[index]);
+    await videoController.initialize();
+    videoController.setLooping(true);
+    videoController.play();
+
+    final chewieController = ChewieController(
+      videoPlayerController: videoController,
+      autoPlay: true,
+      looping: true,
+    );
+
+    controller.videoControllers[index] = videoController;
+    controller.chewieControllers[index] = chewieController;
+
+    return chewieController;
   }
 }
