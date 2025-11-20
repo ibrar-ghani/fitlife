@@ -8,14 +8,13 @@ class MotivationController extends GetxController {
   RxBool isLoading = false.obs;
   RxList<String> quotes = <String>[].obs;
 
-  // Free online MP4 video URLs
+  // Stable online MP4 links (working ones)
   RxList<String> videoLinks = <String>[
-    "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4",
-    "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_5mb.mp4",
-    "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_10mb.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
   ].obs;
 
-  // VideoPlayer + Chewie controllers
   RxMap<int, VideoPlayerController> videoControllers = <int, VideoPlayerController>{}.obs;
   RxMap<int, ChewieController> chewieControllers = <int, ChewieController>{}.obs;
 
@@ -23,19 +22,19 @@ class MotivationController extends GetxController {
   void onInit() {
     super.onInit();
     fetchQuote();
-    _initVideoControllers();
+    initializeAllVideos();
   }
 
   Future<void> fetchQuote() async {
     try {
       isLoading.value = true;
       final response = await http.get(Uri.parse("https://zenquotes.io/api/random"));
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final quote = "${data[0]["q"]} — ${data[0]["a"]}";
-        quotes.add(quote);
+        quotes.add("${data[0]["q"]} — ${data[0]["a"]}");
       } else {
-        quotes.add("Believe in yourself, you are stronger than you think.");
+        quotes.add("Believe in yourself.");
       }
     } catch (e) {
       quotes.add("Stay positive, work hard, and make it happen.");
@@ -44,36 +43,42 @@ class MotivationController extends GetxController {
     }
   }
 
- void _initVideoControllers() async {
-  for (int i = 0; i < videoLinks.length; i++) {
-    final vc = VideoPlayerController.network(videoLinks[i]);
+  /// Initialize ALL videos at once (no FutureBuilder needed)
+  void initializeAllVideos() async {
+    for (int i = 0; i < videoLinks.length; i++) {
+      try {
+        final vc = VideoPlayerController.networkUrl(Uri.parse(videoLinks[i]));
 
-    try {
-      await vc.initialize(); // wait until video is fully initialized
-      vc.setLooping(true);
-      vc.play();
+        await vc.initialize();
+        vc.setLooping(true);
+        vc.play();
 
-      final chewieController = ChewieController(
-        videoPlayerController: vc,
-        autoPlay: true,
-        looping: true,
-      );
+        final chewie = ChewieController(
+          videoPlayerController: vc,
+          autoPlay: true,
+          looping: true,
+          showControls: false,
+        );
 
-      videoControllers[i] = vc;
-      chewieControllers[i] = chewieController;
+        videoControllers[i] = vc;
+        chewieControllers[i] = chewie;
 
-      update(); // notify UI
-    } catch (e) {
-      print("Error initializing video $i: $e");
+      } catch (e) {
+        print("Video error ($i): $e");
+      }
     }
-  }
-}
 
+    update();
+  }
 
   @override
   void onClose() {
-    videoControllers.forEach((_, vc) => vc.dispose());
-    chewieControllers.forEach((_, ch) => ch.dispose());
+    for (var vc in videoControllers.values) {
+      vc.dispose();
+    }
+    for (var ch in chewieControllers.values) {
+      ch.dispose();
+    }
     super.onClose();
   }
 }

@@ -28,31 +28,43 @@ class MotivationPage extends StatelessWidget {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                return Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Chewie(controller: snapshot.data!),
-                    Positioned(
-                      bottom: 50,
-                      left: 16,
-                      right: 16,
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.black38,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          controller.quotes.isNotEmpty
-                              ? controller.quotes[index % controller.quotes.length]
-                              : "Stay motivated!",
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ],
-                );
+              final chewie = snapshot.data!;
+
+return Stack(
+  fit: StackFit.expand,
+  children: [
+    FittedBox(
+      fit: BoxFit.cover, // Makes video full screen like TikTok
+      child: SizedBox(
+        width: chewie.videoPlayerController.value.size.width,
+        height: chewie.videoPlayerController.value.size.height,
+        child: Chewie(controller: chewie),
+      ),
+    ),
+
+    // QUOTE OVERLAY
+    Positioned(
+      bottom: 60,
+      left: 16,
+      right: 16,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.black38,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          controller.quotes.isNotEmpty
+              ? controller.quotes[index % controller.quotes.length]
+              : "Stay motivated!",
+          style: const TextStyle(color: Colors.white, fontSize: 18),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    ),
+  ],
+);
+
               },
             );
           },

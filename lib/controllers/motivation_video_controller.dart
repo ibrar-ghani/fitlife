@@ -15,14 +15,20 @@ class MotivationVideoController extends GetxController {
     fetchFirebaseVideos();
   }
 
- void fetchFirebaseVideos() async {
-  final storageRef = FirebaseStorage.instance.ref().child("motivation_videos");
-  final ListResult result = await storageRef.listAll();
+  Future<void> fetchFirebaseVideos() async {
+    try {
+      final storageRef =
+          FirebaseStorage.instance.ref().child("motivation_videos");
 
-  // Use Future.wait to resolve all download URLs
-  final urls = await Future.wait(result.items.map((item) => item.getDownloadURL()));
+      final ListResult result = await storageRef.listAll();
 
-  firebaseVideos.value = urls;
-}
- 
+      final urls = await Future.wait(
+        result.items.map((item) => item.getDownloadURL()),
+      );
+
+      firebaseVideos.value = urls;
+    } catch (e) {
+      print("❌ Firebase Video Fetch Error: $e");
+    }
+  }
 }
