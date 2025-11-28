@@ -13,6 +13,7 @@ void main() async {
 
  await Firebase.initializeApp();
 
+  WidgetsFlutterBinding.ensureInitialized();
 
   Get.put(ProgressController());
   Get.put(MotivationController());
