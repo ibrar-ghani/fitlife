@@ -11,20 +11,24 @@ import 'views/auth/login_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase ONLY ONCE
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Only initialize once
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
 
-  // Inject controllers after Firebase is ready
-  Get.put(AuthController());
-  Get.put(ProgressController());
-  Get.put(MotivationController());
+  // Inject controllers AFTER Firebase initialization
+  Get.put(AuthController(), permanent: true);
+  Get.put(ProgressController(), permanent: true);
+  Get.put(MotivationController(), permanent: true);
 
   runApp(FitLifeApp());
 }
 
 class FitLifeApp extends StatelessWidget {
+  const FitLifeApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(

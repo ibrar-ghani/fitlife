@@ -82,7 +82,11 @@ class _SleepPageState extends State<SleepPage> {
                         return;
                       }
                       controller.addSleep(bedTime!, wakeTime!, sleepQuality);
-                      setState(() => { bedTime = null, wakeTime = null, sleepQuality = 3 });
+                      setState(() {
+                        bedTime = null;
+                        wakeTime = null;
+                        sleepQuality = 3;
+                      });
                     },
                     child: const Text("Save", style: TextStyle(color: Colors.black)),
                   )

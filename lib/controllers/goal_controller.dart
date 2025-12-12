@@ -5,7 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class GoalController extends GetxController {
   static const String _kGoalKey = 'dailyGoal';
-  RxDouble goal = 0.0.obs; // target (e.g., km)
+
+  // Current goal value (e.g., distance in km)
+  RxDouble goal = 0.0.obs;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -17,7 +19,7 @@ class GoalController extends GetxController {
   }
 
   // ---------------------------------------------------------
-  // 🔥 Load goal from Firebase or fallback to SharedPreferences
+  // 🔥 Load goal from Firebase, fallback to local storage
   // ---------------------------------------------------------
   Future<void> _loadGoal() async {
     final user = _auth.currentUser;
@@ -42,12 +44,14 @@ class GoalController extends GetxController {
   }
 
   // ---------------------------------------------------------
-  // 🔥 Set new goal
+  // 🔥 Set a new goal
   // ---------------------------------------------------------
   Future<void> setGoal(double newGoal) async {
     goal.value = newGoal;
 
     final user = _auth.currentUser;
+
+    // Save to Firebase
     if (user != null) {
       try {
         await _firestore.collection('users').doc(user.uid).set({
@@ -58,17 +62,20 @@ class GoalController extends GetxController {
       }
     }
 
+    // Save locally
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_kGoalKey, newGoal);
   }
 
   // ---------------------------------------------------------
-  // 🔥 Clear goal
+  // 🔥 Clear the current goal
   // ---------------------------------------------------------
   Future<void> clearGoal() async {
     goal.value = 0.0;
 
     final user = _auth.currentUser;
+
+    // Remove from Firebase
     if (user != null) {
       try {
         await _firestore.collection('users').doc(user.uid).update({
@@ -79,6 +86,7 @@ class GoalController extends GetxController {
       }
     }
 
+    // Remove locally
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kGoalKey);
   }

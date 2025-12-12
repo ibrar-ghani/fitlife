@@ -21,17 +21,21 @@ class BadgeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _loadFromLocal();
-    _loadFromFirebase();
+    _initializeBadgeData();
+  }
+
+  Future<void> _initializeBadgeData() async {
+    await _loadFromLocal();
+    await _loadFromFirebase();
   }
 
   // ---------------------------------------------------------
-  // 🔥 Local storage fallback
+  // 🔥 Local storage
   // ---------------------------------------------------------
   Future<void> _loadFromLocal() async {
     final prefs = await SharedPreferences.getInstance();
     final earned = prefs.getStringList(_kEarnedKey) ?? [];
-    earnedBadges.assignAll(earned.map((e) => int.tryParse(e) ?? 0).where((v) => v > 0).toList());
+    earnedBadges.assignAll(earned.map((e) => int.tryParse(e) ?? 0).where((v) => v > 0));
     streak.value = prefs.getInt(_kStreakKey) ?? 0;
     lastActiveDate.value = prefs.getString(_kLastDateKey) ?? '';
   }
@@ -53,10 +57,10 @@ class BadgeController extends GetxController {
 
       final doc = await _firestore.collection('users').doc(user.uid).get();
       if (doc.exists) {
-        streak.value = doc.data()?['streak'] ?? streak.value;
-        lastActiveDate.value = doc.data()?['lastActiveDate'] ?? lastActiveDate.value;
-        final badges = List.from(doc.data()?['earnedBadges'] ?? []);
-        earnedBadges.assignAll(badges.cast<int>());
+        final data = doc.data()!;
+        streak.value = data['streak'] ?? streak.value;
+        lastActiveDate.value = data['lastActiveDate'] ?? lastActiveDate.value;
+        earnedBadges.assignAll(List<int>.from(data['earnedBadges'] ?? []));
       }
     } catch (e) {
       print("BadgeController Firebase load error: $e");
@@ -79,7 +83,7 @@ class BadgeController extends GetxController {
   }
 
   // ---------------------------------------------------------
-  // 🔥 Register daily activity
+  // 🔥 Daily activity tracking
   // ---------------------------------------------------------
   Future<void> registerDailyActivity(DateTime today) async {
     final todayStr = _dateOnlyIso(today);
@@ -88,10 +92,9 @@ class BadgeController extends GetxController {
       streak.value = 1;
     } else {
       final last = DateTime.parse(lastActiveDate.value);
-      final difference = _dateOnly(today).difference(_dateOnly(last)).inDays;
-      if (difference == 0) return; // already logged today
-      else if (difference == 1) streak.value += 1;
-      else streak.value = 1; // reset streak
+      final diffDays = _dateOnly(today).difference(_dateOnly(last)).inDays;
+      if (diffDays == 0) return; // already logged
+      streak.value = diffDays == 1 ? streak.value + 1 : 1;
     }
 
     lastActiveDate.value = todayStr;

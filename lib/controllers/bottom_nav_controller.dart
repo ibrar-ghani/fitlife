@@ -1,13 +1,16 @@
 import 'package:get/get.dart';
 
 class BottomNavController extends GetxController {
-  RxInt currentIndex = 0.obs;
+  // Current selected tab index
+  final RxInt currentIndex = 0.obs;
 
-  // Change tab index
+  // Change the active tab
   void changeTab(int index) {
-    currentIndex.value = index;
+    if (index != currentIndex.value) {
+      currentIndex.value = index;
+    }
   }
 
-  // Optional: helper to get current index
+  // Helper to get the current active tab index
   int get activeTab => currentIndex.value;
 }
