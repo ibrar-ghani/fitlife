@@ -8,14 +8,21 @@ import 'firebase_options.dart';
 import 'views/home_page.dart';
 import 'views/auth/login_page.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Only initialize once
-  if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+  // Ensure Firebase is only initialized once
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      print("✅ Firebase initialized successfully.");
+    } else {
+      print("ℹ Firebase already initialized.");
+    }
+  } catch (e) {
+    print("❌ Firebase initialization error: $e");
   }
 
   // Inject controllers AFTER Firebase initialization
@@ -23,7 +30,7 @@ void main() async {
   Get.put(ProgressController(), permanent: true);
   Get.put(MotivationController(), permanent: true);
 
-  runApp(FitLifeApp());
+  runApp(const FitLifeApp());
 }
 
 class FitLifeApp extends StatelessWidget {
