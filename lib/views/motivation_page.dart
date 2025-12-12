@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:share_plus/share_plus.dart';
-import '../controllers/motivation_controller.dart';
+import '../../controllers/motivation_controller.dart';
 
 class MotivationPage extends StatefulWidget {
   const MotivationPage({super.key});
@@ -14,16 +14,12 @@ class MotivationPage extends StatefulWidget {
 
 class _MotivationPageState extends State<MotivationPage>
     with SingleTickerProviderStateMixin {
-
   final MotivationController controller = Get.put(MotivationController());
   final PageController _pageController = PageController();
 
-  Map<int, bool> liked = {};
-  Map<int, int> likeCounts = {};
-  Map<int, bool> showHeart = {};
-
   late AnimationController _heartController;
   late Animation<double> _heartAnimation;
+  Map<int, bool> showHeart = {};
 
   @override
   void initState() {
@@ -39,18 +35,13 @@ class _MotivationPageState extends State<MotivationPage>
     );
 
     for (int i = 0; i < controller.videoLinks.length; i++) {
-      liked[i] = false;
-      likeCounts[i] = 0;
       showHeart[i] = false;
     }
   }
 
   void _handleDoubleTap(int index) {
-    setState(() {
-      liked[index] = true;
-      likeCounts[index] = (likeCounts[index] ?? 0) + 1;
-      showHeart[index] = true;
-    });
+    setState(() => showHeart[index] = true);
+    controller.handleLike(index);
 
     _heartController.forward().then((_) {
       _heartController.reverse();
@@ -74,11 +65,11 @@ class _MotivationPageState extends State<MotivationPage>
       builder: (_) => Container(
         padding: const EdgeInsets.all(16),
         child: Column(
-          children: [
-            const Text("Comments",
+          children: const [
+            Text("Comments",
                 style: TextStyle(color: Colors.white, fontSize: 18)),
-            const Divider(color: Colors.white24),
-            const Expanded(
+            Divider(color: Colors.white24),
+            Expanded(
               child: Center(
                 child: Text("No comments yet 😕",
                     style: TextStyle(color: Colors.white70)),
@@ -113,16 +104,14 @@ class _MotivationPageState extends State<MotivationPage>
             final chewieController = controller.chewieControllers[index];
             final videoController = chewieController?.videoPlayerController;
 
-            if (videoController == null ||
-                !videoController.value.isInitialized) {
+            if (videoController == null || !videoController.value.isInitialized) {
               return const Center(child: CircularProgressIndicator());
             }
 
             return Stack(
               fit: StackFit.expand,
               children: [
-
-                /// ✅ FULLSCREEN REELS VIDEO
+                /// Video
                 GestureDetector(
                   onDoubleTap: () => _handleDoubleTap(index),
                   child: FittedBox(
@@ -135,7 +124,7 @@ class _MotivationPageState extends State<MotivationPage>
                   ),
                 ),
 
-                /// ✅ QUOTE OVERLAY
+                /// Quote Overlay
                 Positioned(
                   left: 16,
                   right: 80,
@@ -152,7 +141,7 @@ class _MotivationPageState extends State<MotivationPage>
                   ),
                 ),
 
-                /// ❤️ HEART ANIMATION (PER VIDEO)
+                /// Heart Animation
                 if (showHeart[index] == true)
                   Center(
                     child: ScaleTransition(
@@ -165,7 +154,7 @@ class _MotivationPageState extends State<MotivationPage>
                     ),
                   ),
 
-                /// ✅ SIDEBAR
+                /// Sidebar
                 Positioned(
                   right: 12,
                   bottom: 140,
@@ -173,10 +162,10 @@ class _MotivationPageState extends State<MotivationPage>
                     children: [
                       IconButton(
                         icon: Icon(
-                          liked[index] == true
+                          controller.likedVideos[index] == true
                               ? Icons.favorite
                               : Icons.favorite_border,
-                          color: liked[index] == true
+                          color: controller.likedVideos[index] == true
                               ? Colors.red
                               : Colors.white,
                           size: 32,
@@ -184,7 +173,7 @@ class _MotivationPageState extends State<MotivationPage>
                         onPressed: () => _handleDoubleTap(index),
                       ),
                       Text(
-                        '${likeCounts[index]}',
+                        '${controller.likeCounts[index] ?? 0}',
                         style: const TextStyle(color: Colors.white),
                       ),
                       const SizedBox(height: 20),

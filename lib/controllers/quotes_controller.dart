@@ -1,8 +1,10 @@
 import 'package:get/get.dart';
 import 'dart:math';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class QuotesController extends GetxController {
-  final quotes = [
+  final List<String> defaultQuotes = [
     "Push yourself, because no one else is going to do it for you.",
     "Success starts with self-discipline.",
     "Don’t limit your challenges. Challenge your limits.",
@@ -17,18 +19,65 @@ class QuotesController extends GetxController {
 
   RxString dailyQuote = "".obs;
 
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   @override
   void onInit() {
     super.onInit();
     _setRandomQuote();
+    _loadQuoteFromFirebase();
   }
 
+  // ---------------------------------------------------------
+  // 🔥 Pick a random quote locally
+  // ---------------------------------------------------------
   void _setRandomQuote() {
     final random = Random();
-    dailyQuote.value = quotes[random.nextInt(quotes.length)];
+    dailyQuote.value = defaultQuotes[random.nextInt(defaultQuotes.length)];
   }
 
+  // ---------------------------------------------------------
+  // 🔥 Load saved quote from Firebase if available
+  // ---------------------------------------------------------
+  Future<void> _loadQuoteFromFirebase() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        final doc = await _firestore.collection('users').doc(user.uid).get();
+        if (doc.exists && doc.data()?['dailyQuote'] != null) {
+          dailyQuote.value = doc.data()?['dailyQuote'];
+        } else {
+          // Save first random quote
+          await _saveQuoteToFirebase(dailyQuote.value);
+        }
+      }
+    } catch (e) {
+      print("QuotesController Firebase load error: $e");
+    }
+  }
+
+  // ---------------------------------------------------------
+  // 🔥 Save quote to Firebase
+  // ---------------------------------------------------------
+  Future<void> _saveQuoteToFirebase(String quote) async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await _firestore.collection('users').doc(user.uid).set({
+          'dailyQuote': quote,
+        }, SetOptions(merge: true));
+      }
+    } catch (e) {
+      print("QuotesController Firebase save error: $e");
+    }
+  }
+
+  // ---------------------------------------------------------
+  // 🔥 Refresh to new random quote
+  // ---------------------------------------------------------
   void refreshQuote() {
     _setRandomQuote();
+    _saveQuoteToFirebase(dailyQuote.value);
   }
 }

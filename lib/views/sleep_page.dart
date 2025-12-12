@@ -1,9 +1,11 @@
-import 'package:fitlife/widgets/sleep_bar_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/sleep_controller.dart';
+import '../../widgets/sleep_bar_chart.dart';
 
 class SleepPage extends StatefulWidget {
+  const SleepPage({super.key});
+
   @override
   State<SleepPage> createState() => _SleepPageState();
 }
@@ -36,12 +38,11 @@ class _SleepPageState extends State<SleepPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-
-            // ✅ Average Sleep Summary Box
+            // Average Sleep
             Obx(() => Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [Colors.indigo, Colors.blue]),
+                gradient: const LinearGradient(colors: [Colors.indigo, Colors.blue]),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
@@ -52,7 +53,7 @@ class _SleepPageState extends State<SleepPage> {
 
             const SizedBox(height: 18),
 
-            // ✅ Sleep Input Card (same as before except cleaned)
+            // Sleep Input
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(color: Colors.indigo.shade600, borderRadius: BorderRadius.circular(16)),
@@ -91,21 +92,21 @@ class _SleepPageState extends State<SleepPage> {
 
             const SizedBox(height: 20),
 
-Obx(() {
-  if (controller.sleepHistory.isEmpty) return SizedBox();
-  return SleepBarChart(data: controller.sleepHistory.toList());
-}),
-
+            // Sleep Bar Chart
+            Obx(() {
+              if (controller.sleepHistory.isEmpty) return const SizedBox();
+              return SleepBarChart(data: controller.sleepHistory.toList());
+            }),
 
             const SizedBox(height: 20),
 
-            Align(alignment: Alignment.centerLeft, child: Text("Sleep History", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+            Align(alignment: Alignment.centerLeft, child: const Text("Sleep History", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
 
             Obx(() => controller.sleepHistory.isEmpty
               ? const Padding(padding: EdgeInsets.only(top: 20), child: Text("No sleep records yet."))
               : ListView.builder(
                   shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
+                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: controller.sleepHistory.length,
                   itemBuilder: (_, i) {
                     final e = controller.sleepHistory[i];
@@ -113,7 +114,12 @@ Obx(() {
                       key: ValueKey(i),
                       direction: DismissDirection.endToStart,
                       onDismissed: (_) => controller.deleteSleep(i),
-                      background: Container(color: Colors.red, alignment: Alignment.centerRight, padding: EdgeInsets.only(right: 20), child: Icon(Icons.delete, color: Colors.white)),
+                      background: Container(
+                        color: Colors.red,
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 20),
+                        child: const Icon(Icons.delete, color: Colors.white),
+                      ),
                       child: Card(
                         child: ListTile(
                           title: Text("${e.hours.toStringAsFixed(1)} hours"),
@@ -134,8 +140,8 @@ Obx(() {
   Widget _timeBox(String label, String time, VoidCallback onTap) {
     return Column(
       children: [
-        Text(label, style: TextStyle(color: Colors.white)),
-        Text(time, style: TextStyle(color: Colors.white, fontSize: 18)),
+        Text(label, style: const TextStyle(color: Colors.white)),
+        Text(time, style: const TextStyle(color: Colors.white, fontSize: 18)),
         TextButton(onPressed: onTap, child: const Text("Select", style: TextStyle(color: Colors.white70)))
       ],
     );

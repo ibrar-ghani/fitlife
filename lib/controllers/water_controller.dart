@@ -1,63 +1,65 @@
-// lib/controllers/water_controller.dart
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'auth_controller.dart';
 
 class WaterController extends GetxController {
-  static const String _kTodayKey = 'water_today_amount';
-  static const String _kDateKey = 'water_last_date';
-  RxDouble todayAmount = 0.0.obs; // in ml
-  RxDouble dailyGoal = 2000.0.obs; // default 2000 ml
+  final AuthController auth = Get.find();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  RxDouble todayAmount = 0.0.obs;
+  RxDouble dailyGoal = 2000.0.obs;
 
   @override
   void onInit() {
     super.onInit();
-    _loadSaved();
+    _loadData();
   }
 
-  Future<void> _loadSaved() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastDate = prefs.getString(_kDateKey) ?? '';
-    final todayString = DateTime.now().toIso8601String().split('T').first;
+  Future<void> _loadData() async {
+    if (auth.user == null) return;
+    final uid = auth.user!.uid;
 
-    if (lastDate != todayString) {
-      // new day -> reset
-      todayAmount.value = 0.0;
-      await prefs.setString(_kDateKey, todayString);
-      await prefs.setDouble(_kTodayKey, 0.0);
+    final doc = await _firestore.collection('users').doc(uid).collection('water').doc('today').get();
+
+    if (doc.exists) {
+      final data = doc.data()!;
+      todayAmount.value = (data['todayAmount'] ?? 0).toDouble();
+      dailyGoal.value = (data['dailyGoal'] ?? 2000).toDouble();
     } else {
-      todayAmount.value = prefs.getDouble(_kTodayKey) ?? 0.0;
+      // create initial doc
+      await _firestore.collection('users').doc(uid).collection('water').doc('today').set({
+        'todayAmount': todayAmount.value,
+        'dailyGoal': dailyGoal.value,
+      });
     }
-
-    // load any persisted goal (optional)
-    final savedGoal = prefs.getDouble('water_goal') ?? 2000.0;
-    dailyGoal.value = savedGoal;
   }
 
-  Future<void> addAmount(double ml) async {
-    todayAmount.value += ml;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(_kTodayKey, todayAmount.value);
-    // ensure date recorded
-    final todayString = DateTime.now().toIso8601String().split('T').first;
-    await prefs.setString(_kDateKey, todayString);
-  }
-
-  Future<void> setGoal(double ml) async {
-    dailyGoal.value = ml;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('water_goal', ml);
-  }
-
-  Future<void> resetToday() async {
-    todayAmount.value = 0.0;
-    final prefs = await SharedPreferences.getInstance();
-    final todayString = DateTime.now().toIso8601String().split('T').first;
-    await prefs.setString(_kDateKey, todayString);
-    await prefs.setDouble(_kTodayKey, 0.0);
+  Future<void> _saveData() async {
+    if (auth.user == null) return;
+    final uid = auth.user!.uid;
+    await _firestore.collection('users').doc(uid).collection('water').doc('today').set({
+      'todayAmount': todayAmount.value,
+      'dailyGoal': dailyGoal.value,
+    });
   }
 
   double percent() {
-    if (dailyGoal.value <= 0) return 0.0;
+    if (dailyGoal.value == 0) return 0.0;
     return (todayAmount.value / dailyGoal.value).clamp(0.0, 1.0);
+  }
+
+  Future<void> addAmount(double amount) async {
+    todayAmount.value += amount;
+    await _saveData();
+  }
+
+  Future<void> resetToday() async {
+    todayAmount.value = 0;
+    await _saveData();
+  }
+
+  Future<void> setGoal(double goal) async {
+    dailyGoal.value = goal;
+    await _saveData();
   }
 }

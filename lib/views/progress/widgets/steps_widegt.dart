@@ -1,9 +1,60 @@
+import 'package:fitlife/controllers/auth_controller.dart';
 import 'package:fitlife/controllers/steps_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class StepsWidget extends StatelessWidget {
   final StepsController controller = Get.put(StepsController());
+  final AuthController auth = Get.put(AuthController());
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// Firestore path: users/{uid}/steps/today
+  String get _stepsDocPath => 'users/${auth.user?.uid}/steps/today';
+
+  StepsWidget({Key? key}) : super(key: key) {
+    _loadSteps(); // load when widget is created
+  }
+
+  /// Load today's steps from Firestore
+  Future<void> _loadSteps() async {
+    try {
+      if (auth.user == null) return;
+
+      final doc = await _firestore.doc(_stepsDocPath).get();
+      if (doc.exists) {
+        final data = doc.data();
+        final storedDate = data?['date'] ?? '';
+        final todayString = DateTime.now().toIso8601String().split('T').first;
+
+        if (storedDate == todayString) {
+          controller.steps.value = (data?['steps'] ?? 0).toInt();
+        } else {
+          controller.steps.value = 0;
+        }
+      }
+    } catch (e) {
+      print("Firestore load steps error: $e");
+    }
+  }
+
+  /// Add steps and update Firestore
+  Future<void> _addSteps(int count) async {
+    controller.addSteps(count);
+
+    try {
+      if (auth.user == null) return;
+
+      final todayString = DateTime.now().toIso8601String().split('T').first;
+      await _firestore.doc(_stepsDocPath).set({
+        'steps': controller.steps.value,
+        'date': todayString,
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print("Firestore add steps error: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +115,7 @@ class StepsWidget extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: () => controller.addSteps(200),
+              onPressed: () => _addSteps(200),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.blue.shade800,

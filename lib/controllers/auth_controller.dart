@@ -1,56 +1,80 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  // Observable to track Firebase connection status
-  RxBool isFirebaseConnected = false.obs;
-  // Observable Firebase User
+
+  // Firebase user stream
   Rxn<User> firebaseUser = Rxn<User>();
- 
+
   @override
   void onInit() {
     super.onInit();
-    checkFirebaseConnection();
-    // Listen to login/logout
+
+    // Firebase is initialized in main.dart — DO NOT initialize here!
     firebaseUser.bindStream(_auth.authStateChanges());
   }
 
-   void checkFirebaseConnection() async {
-    try {
-      await Firebase.apps; // Fetch initialized apps
-      isFirebaseConnected.value = true;
-    } catch (e) {
-      isFirebaseConnected.value = false;
-    }
-  }
-
-  // Getter for user
+  // ---------------------------------------------------------
+  // 🔥 GET CURRENT USER
+  // ---------------------------------------------------------
   User? get user => firebaseUser.value;
 
-  // SIGN IN
+  // ---------------------------------------------------------
+  // 🔥 LOGIN USER
+  // ---------------------------------------------------------
   Future<String?> login(String email, String password) async {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
-      return null; // success
+      return null;
     } catch (e) {
-      return e.toString();
+      return _handleAuthError(e);
     }
   }
 
-  // SIGN UP
+  // ---------------------------------------------------------
+  // 🔥 REGISTER NEW USER
+  // ---------------------------------------------------------
   Future<String?> register(String email, String password) async {
     try {
       await _auth.createUserWithEmailAndPassword(email: email, password: password);
       return null;
     } catch (e) {
-      return e.toString();
+      return _handleAuthError(e);
     }
   }
 
-  // LOGOUT
+  // ---------------------------------------------------------
+  // 🔥 LOGOUT
+  // ---------------------------------------------------------
   Future<void> logout() async {
-    await _auth.signOut();
+    try {
+      await _auth.signOut();
+    } catch (e) {
+      print("Logout Error: $e");
+    }
+  }
+
+  // ---------------------------------------------------------
+  // 🔥 ERROR HANDLER
+  // ---------------------------------------------------------
+  String _handleAuthError(Object error) {
+    final String message = error.toString();
+
+    if (message.contains("wrong-password")) {
+      return "Incorrect password. Please try again.";
+    } else if (message.contains("user-not-found")) {
+      return "No user found with this email.";
+    } else if (message.contains("invalid-email")) {
+      return "Invalid email address.";
+    } else if (message.contains("email-already-in-use")) {
+      return "This email is already registered.";
+    } else if (message.contains("too-many-requests")) {
+      return "Too many attempts. Try again later.";
+    } else if (message.contains("network-request-failed")) {
+      return "No internet connection. Please check your network.";
+    }
+
+    return "Authentication error: $message";
   }
 }

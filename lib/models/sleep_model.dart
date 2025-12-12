@@ -1,27 +1,28 @@
 class SleepEntry {
+  final String id; // Firestore document ID
   final DateTime bedTime;
   final DateTime wakeTime;
-  final double hours;
-  final int quality; // 1 to 5 stars
+  final int quality;
 
   SleepEntry({
+    required this.id,
     required this.bedTime,
     required this.wakeTime,
-    required this.hours,
     required this.quality,
   });
 
-  Map<String, dynamic> toJson() => {
+  double get hours => wakeTime.difference(bedTime).inMinutes / 60;
+
+  Map<String, dynamic> toMap() => {
         'bedTime': bedTime.toIso8601String(),
         'wakeTime': wakeTime.toIso8601String(),
-        'hours': hours,
         'quality': quality,
       };
 
-  factory SleepEntry.fromJson(Map<String, dynamic> json) => SleepEntry(
-        bedTime: DateTime.parse(json['bedTime']),
-        wakeTime: DateTime.parse(json['wakeTime']),
-        hours: json['hours'],
-        quality: json['quality'],
+  factory SleepEntry.fromMap(Map<String, dynamic> map, String docId) => SleepEntry(
+        id: docId,
+        bedTime: DateTime.parse(map['bedTime']),
+        wakeTime: DateTime.parse(map['wakeTime']),
+        quality: map['quality'] ?? 3,
       );
 }

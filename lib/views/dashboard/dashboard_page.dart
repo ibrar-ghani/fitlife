@@ -1,17 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import '../../controllers/sleep_controller.dart';
-import '../../controllers/water_controller.dart';
-import '../../controllers/steps_controller.dart';
-import '../../controllers/motivation_controller.dart';
-import '../../controllers/auth_controller.dart'; // ✅ Added
 
 class DashboardPage extends StatelessWidget {
-  final sleep = Get.put(SleepController());
-  final water = Get.put(WaterController());
-  final steps = Get.put(StepsController());
-  final motivation = Get.put(MotivationController());
-  final auth = Get.put(AuthController()); // ✅ Added
+  const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -20,109 +10,102 @@ class DashboardPage extends StatelessWidget {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
-        title: Text("FitLife Dashboard", style: TextStyle(color: Colors.black)),
+        title: const Text(
+          "FitLife Dashboard",
+          style: TextStyle(color: Colors.black),
+        ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // Greeting
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Hello Ibrar 👋",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
+            const Text(
+              "Hello Ibrar 👋",
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Here’s your health summary for today.",
-                style: TextStyle(color: Colors.black54),
-              ),
+            const SizedBox(height: 4),
+            const Text(
+              "Here’s your health summary for today.",
+              style: TextStyle(color: Colors.black54),
             ),
 
-            SizedBox(height: 8),
+            const SizedBox(height: 20),
 
-            // ✅ Firebase Connection Status
-            Obx(() {
-              return Row(
-                children: [
-                  Icon(
-                    Icons.cloud,
-                    color: auth.isFirebaseConnected.value ? Colors.green : Colors.red,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    auth.isFirebaseConnected.value ? "Firebase Connected" : "Offline",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: auth.isFirebaseConnected.value ? Colors.green : Colors.red,
-                    ),
-                  ),
-                ],
-              );
-            }),
+            // Firebase Indicator (Static Placeholder)
+            Row(
+              children: const [
+                Icon(Icons.cloud, color: Colors.orange),
+                SizedBox(width: 8),
+                Text(
+                  "Checking Firebase...",
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.orange),
+                ),
+              ],
+            ),
 
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-            // Stats Grid
             GridView(
-              physics: NeverScrollableScrollPhysics(),
+              physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
-              gridDelegate:
-                  SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, mainAxisSpacing: 16, crossAxisSpacing: 16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+              ),
               children: [
-                _statCard(Icons.nightlight_round, "Sleep", "${sleep.averageSleep().toStringAsFixed(1)} hrs", Colors.indigo),
-                _statCard(Icons.local_drink, "Water", "${water.todayAmount} ml", Colors.blue),
-                _statCard(Icons.directions_walk, "Steps", "${steps.steps}", Colors.green),
+                _statCard(Icons.nightlight_round, "Sleep", "-- hrs", Colors.indigo),
+                _statCard(Icons.local_drink, "Water", "-- ml", Colors.blue),
+                _statCard(Icons.directions_walk, "Steps", "--", Colors.green),
                 _statCard(Icons.lightbulb, "Motivation", "Tap to View", Colors.orange),
               ],
             ),
 
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-            // Quote Section
-            Obx(() => Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade100,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    motivation.quotes.isEmpty
-                        ? "Loading motivational quote..."
-                        : motivation.quotes[DateTime.now().day % motivation.quotes.length],
-                    style: TextStyle(
-                        fontSize: 16, fontStyle: FontStyle.italic, color: Colors.orange.shade900),
-                    textAlign: TextAlign.center,
-                  ),
-                )),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade100,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                "Your daily motivational quote will appear here!",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.orange.shade900,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _statCard(IconData icon, String title, String value, Color color) {
+  static Widget _statCard(IconData icon, String title, String value, Color color) {
     return Container(
       decoration: BoxDecoration(
         color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(16),
       ),
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, size: 32, color: color),
-          SizedBox(height: 12),
-          Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-          SizedBox(height: 4),
-          Text(value, style: TextStyle(fontSize: 16, color: Colors.black87)),
+          const SizedBox(height: 12),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 16, color: Colors.black87),
+          ),
         ],
       ),
     );

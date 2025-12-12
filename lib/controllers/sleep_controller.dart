@@ -1,59 +1,71 @@
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/sleep_model.dart';
+import 'auth_controller.dart';
 
 class SleepController extends GetxController {
+  final AuthController auth = Get.find();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   RxList<SleepEntry> sleepHistory = <SleepEntry>[].obs;
 
   @override
   void onInit() {
     super.onInit();
-    loadHistory();
+    _loadSleepData();
   }
 
-  Future<void> loadHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getStringList('sleep_history') ?? [];
-    sleepHistory.value =
-        data.map((e) => SleepEntry.fromJson(jsonDecode(e))).toList();
+  Future<void> _loadSleepData() async {
+    if (auth.user == null) return;
+    final uid = auth.user!.uid;
+
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('sleep')
+        .orderBy('bedTime', descending: true)
+        .get();
+
+    sleepHistory.assignAll(snapshot.docs
+        .map((doc) => SleepEntry.fromMap(doc.data(), doc.id))
+        .toList());
   }
 
-  Future<void> addSleep(DateTime bed, DateTime wake, int quality) async {
-    // ✅ Handle sleep across midnight (e.g. 23:00 to 07:00)
-    if (wake.isBefore(bed)) {
-      wake = wake.add(const Duration(days: 1));
-    }
+  Future<void> addSleep(DateTime bedTime, DateTime wakeTime, int quality) async {
+    if (auth.user == null) return;
+    final uid = auth.user!.uid;
 
-    final hours = wake.difference(bed).inMinutes / 60;
+    final docRef = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('sleep')
+        .add({
+      'bedTime': bedTime.toIso8601String(),
+      'wakeTime': wakeTime.toIso8601String(),
+      'quality': quality,
+    });
 
-    sleepHistory.add(
-      SleepEntry(
-        bedTime: bed,
-        wakeTime: wake,
-        hours: hours,
-        quality: quality,
-      ),
-    );
-
-    await _save();
+    final entry = SleepEntry(id: docRef.id, bedTime: bedTime, wakeTime: wakeTime, quality: quality);
+    sleepHistory.insert(0, entry);
   }
 
   Future<void> deleteSleep(int index) async {
+    if (auth.user == null || index >= sleepHistory.length) return;
+    final uid = auth.user!.uid;
+
+    final entry = sleepHistory[index];
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('sleep')
+        .doc(entry.id)
+        .delete();
+
     sleepHistory.removeAt(index);
-    await _save();
   }
 
   double averageSleep() {
     if (sleepHistory.isEmpty) return 0.0;
-    return sleepHistory.fold(0.0, (sum, e) => sum + e.hours) / sleepHistory.length;
-  }
-
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(
-      'sleep_history',
-      sleepHistory.map((e) => jsonEncode(e.toJson())).toList(),
-    );
+    return sleepHistory.map((e) => e.hours).reduce((a, b) => a + b) / sleepHistory.length;
   }
 }
