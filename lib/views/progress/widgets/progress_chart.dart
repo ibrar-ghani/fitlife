@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:get/get.dart';
 import '../../../controllers/auth_controller.dart';
-import '../../../controllers/goal_controller.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProgressChart extends StatefulWidget {
