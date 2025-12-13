@@ -1,70 +1,62 @@
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProgressController extends GetxController {
-  RxList<double> progressList = <double>[].obs;
-
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  RxList<double> progressList = <double>[].obs;
+  RxBool isLoading = true.obs;
 
   @override
   void onInit() {
     super.onInit();
-    _loadProgress();
+    _bindProgressStream();
   }
 
-  // ---------------------------------------------------------
-  // 🔥 Load progress from Firebase or fallback to SharedPreferences
-  // ---------------------------------------------------------
-  Future<void> _loadProgress() async {
+  void _bindProgressStream() {
     final user = _auth.currentUser;
-    bool loadedFromFirebase = false;
-
-    if (user != null) {
-      try {
-        final doc = await _firestore.collection('users').doc(user.uid).get();
-        if (doc.exists && doc.data()?['progress'] != null) {
-          List<dynamic> data = doc.data()?['progress'];
-          progressList.value = data.map((e) => (e as num).toDouble()).toList();
-          loadedFromFirebase = true;
-        }
-      } catch (e) {
-        print("Firebase loadProgress error: $e");
-      }
+    if (user == null) {
+      isLoading.value = false;
+      return;
     }
 
-    if (!loadedFromFirebase) {
-      // fallback to SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      final saved = prefs.getStringList('progress') ?? [];
-      progressList.value = saved.map((e) => double.parse(e)).toList();
-    }
+    _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('progress')
+        .orderBy('createdAt')
+        .snapshots()
+        .listen((snapshot) {
+      final data = snapshot.docs
+          .map((doc) => (doc['value'] as num).toDouble())
+          .toList();
+
+      progressList.value = data;
+      isLoading.value = false;
+    });
   }
 
-  // ---------------------------------------------------------
-  // 🔥 Add new progress entry
-  // ---------------------------------------------------------
   Future<void> addProgress(double value) async {
-    progressList.add(value);
-
     final user = _auth.currentUser;
-    if (user != null) {
-      try {
-        await _firestore.collection('users').doc(user.uid).set({
-          'progress': progressList.toList(),
-        }, SetOptions(merge: true));
-      } catch (e) {
-        print("Firebase addProgress error: $e");
-      }
-    }
+    if (user == null) return;
 
-    // Save locally
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(
-      'progress',
-      progressList.map((e) => e.toString()).toList(),
-    );
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('progress')
+        .add({
+      'value': value,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
   }
+
+  // Optional: compute summary metrics
+  int get entries => progressList.length;
+  double get average =>
+      progressList.isEmpty ? 0.0 : progressList.reduce((a, b) => a + b) / progressList.length;
+  double get maxValue => progressList.isEmpty
+      ? 0.0
+      : progressList.reduce((a, b) => a > b ? a : b);
 }

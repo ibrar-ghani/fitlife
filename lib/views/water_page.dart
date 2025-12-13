@@ -14,7 +14,6 @@ class WaterPage extends StatelessWidget {
         title: const Text("Water Tracker"),
         centerTitle: true,
       ),
-
       body: Obx(() {
         final progress = controller.percent();
         final drank = controller.todayAmount.value;
@@ -26,8 +25,7 @@ class WaterPage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-
-                // Custom Circular Progress Water Indicator
+                // Circular Progress Indicator
                 Stack(
                   alignment: Alignment.center,
                   children: [
@@ -45,16 +43,13 @@ class WaterPage extends StatelessWidget {
                       children: [
                         Text(
                           "${drank.toInt()} ml",
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           "Goal: ${goal.toInt()} ml",
                           style: TextStyle(color: Colors.grey.shade700),
-                        )
+                        ),
                       ],
                     ),
                   ],
@@ -67,11 +62,9 @@ class WaterPage extends StatelessWidget {
                   spacing: 14,
                   runSpacing: 14,
                   alignment: WrapAlignment.center,
-                  children: [
-                    _addWaterButton("200 ml", 200),
-                    _addWaterButton("300 ml", 300),
-                    _addWaterButton("500 ml", 500),
-                  ],
+                  children: [200, 300, 500]
+                      .map((v) => _addWaterButton("${v} ml", v.toDouble()))
+                      .toList(),
                 ),
 
                 const SizedBox(height: 30),
@@ -84,14 +77,14 @@ class WaterPage extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                // Reset
+                // Reset Today
                 TextButton(
                   onPressed: controller.resetToday,
                   child: const Text(
                     "Reset Today",
                     style: TextStyle(color: Colors.redAccent),
                   ),
-                )
+                ),
               ],
             ),
           ),
@@ -101,7 +94,6 @@ class WaterPage extends StatelessWidget {
   }
 
   Widget _addWaterButton(String label, double value) {
-    final WaterController controller = Get.find();
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.blueAccent,
@@ -114,7 +106,6 @@ class WaterPage extends StatelessWidget {
   }
 
   void _showGoalDialog(BuildContext context) {
-    final WaterController controller = Get.find();
     final TextEditingController goalCtrl =
         TextEditingController(text: controller.dailyGoal.value.toInt().toString());
 
@@ -132,11 +123,11 @@ class WaterPage extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               final g = double.tryParse(goalCtrl.text) ?? 2000;
-              controller.setGoal(g);
+              if (g > 0) controller.setGoal(g);
               Get.back();
             },
             child: const Text("Save"),
-          )
+          ),
         ],
       ),
     );

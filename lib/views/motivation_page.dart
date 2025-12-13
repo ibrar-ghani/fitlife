@@ -11,8 +11,7 @@ class MotivationPage extends StatefulWidget {
   State<MotivationPage> createState() => _MotivationPageState();
 }
 
-class _MotivationPageState extends State<MotivationPage>
-    with SingleTickerProviderStateMixin {
+class _MotivationPageState extends State<MotivationPage> with SingleTickerProviderStateMixin {
   final MotivationController controller = Get.put(MotivationController());
   final PageController _pageController = PageController();
 
@@ -65,15 +64,9 @@ class _MotivationPageState extends State<MotivationPage>
         padding: const EdgeInsets.all(16),
         child: Column(
           children: const [
-            Text("Comments",
-                style: TextStyle(color: Colors.white, fontSize: 18)),
+            Text("Comments", style: TextStyle(color: Colors.white, fontSize: 18)),
             Divider(color: Colors.white24),
-            Expanded(
-              child: Center(
-                child: Text("No comments yet 😕",
-                    style: TextStyle(color: Colors.white70)),
-              ),
-            ),
+            Expanded(child: Center(child: Text("No comments yet 😕", style: TextStyle(color: Colors.white70)))),
           ],
         ),
       ),
@@ -90,9 +83,7 @@ class _MotivationPageState extends State<MotivationPage>
     return Scaffold(
       backgroundColor: Colors.black,
       body: Obx(() {
-        if (controller.chewieControllers.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
+        if (controller.chewieControllers.isEmpty) return const Center(child: CircularProgressIndicator());
 
         return PageView.builder(
           controller: _pageController,
@@ -129,14 +120,8 @@ class _MotivationPageState extends State<MotivationPage>
                   right: 80,
                   bottom: 140,
                   child: Text(
-                    controller.quotes.isNotEmpty
-                        ? controller.quotes.first
-                        : "Stay strong 💪 Keep moving",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    controller.quotes.isNotEmpty ? controller.quotes.first : "Stay strong 💪 Keep moving",
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                 ),
 
@@ -145,11 +130,7 @@ class _MotivationPageState extends State<MotivationPage>
                   Center(
                     child: ScaleTransition(
                       scale: _heartAnimation,
-                      child: const Icon(
-                        Icons.favorite,
-                        color: Colors.redAccent,
-                        size: 120,
-                      ),
+                      child: const Icon(Icons.favorite, color: Colors.redAccent, size: 120),
                     ),
                   ),
 
@@ -161,37 +142,19 @@ class _MotivationPageState extends State<MotivationPage>
                     children: [
                       IconButton(
                         icon: Icon(
-                          controller.likedVideos[index] == true
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          color: controller.likedVideos[index] == true
-                              ? Colors.red
-                              : Colors.white,
+                          controller.likedVideos[index] == true ? Icons.favorite : Icons.favorite_border,
+                          color: controller.likedVideos[index] == true ? Colors.red : Colors.white,
                           size: 32,
                         ),
                         onPressed: () => _handleDoubleTap(index),
                       ),
-                      Text(
-                        '${controller.likeCounts[index] ?? 0}',
-                        style: const TextStyle(color: Colors.white),
-                      ),
+                      Text('${controller.likeCounts[index] ?? 0}', style: const TextStyle(color: Colors.white)),
                       const SizedBox(height: 20),
-
-                      IconButton(
-                        icon: const Icon(Icons.comment, color: Colors.white),
-                        onPressed: _showComments,
-                      ),
-                      const Text("Comment",
-                          style: TextStyle(color: Colors.white)),
+                      IconButton(icon: const Icon(Icons.comment, color: Colors.white), onPressed: _showComments),
+                      const Text("Comment", style: TextStyle(color: Colors.white)),
                       const SizedBox(height: 20),
-
-                      IconButton(
-                        icon: const Icon(Icons.share, color: Colors.white),
-                        onPressed: () =>
-                            _shareVideo(controller.videoLinks[index]),
-                      ),
-                      const Text("Share",
-                          style: TextStyle(color: Colors.white)),
+                      IconButton(icon: const Icon(Icons.share, color: Colors.white), onPressed: () => _shareVideo(controller.videoLinks[index])),
+                      const Text("Share", style: TextStyle(color: Colors.white)),
                     ],
                   ),
                 ),

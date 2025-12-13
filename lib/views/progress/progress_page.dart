@@ -1,6 +1,7 @@
 // lib/views/progress/progress_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import '../../controllers/badge_controller.dart';
 import '../../controllers/goal_controller.dart';
 import '../../controllers/water_controller.dart';
@@ -13,57 +14,45 @@ import 'widgets/progress_summary.dart';
 import 'widgets/add_progress_input.dart';
 
 class ProgressPage extends StatelessWidget {
-  final badgeController = Get.put(BadgeController());
-  final goalController = Get.put(GoalController());
-  final waterController = Get.put(WaterController());
+  const ProgressPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xffF6F7FB),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.3,
-        title: const Text(
-          'Your Progress',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-        ),
-        centerTitle: true,
-      ),
+    // ✅ Retrieve existing controllers (NO creation)
+    final BadgeController badgeController =
+        Get.find<BadgeController>();
+    final GoalController goalController =
+        Get.find<GoalController>();
+    final WaterController waterController =
+        Get.find<WaterController>();
 
-      body: SingleChildScrollView(
+    return Container(
+      color: const Color(0xffF6F7FB),
+      child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            // ------------ STEPS SECTION ------------
             _sectionTitle("Today's Activity"),
-            _card(
-              child: StepsWidget(),
-            ),
+            _card(child: StepsWidget()),
             const SizedBox(height: 18),
 
-            // ------------ GOALS ------------
             _sectionTitle("Your Goal"),
             _card(child: GoalCard()),
             const SizedBox(height: 18),
 
-            // ------------ BADGES ------------
             _sectionTitle("Achievements"),
             _card(child: BadgesRow()),
             const SizedBox(height: 18),
 
-            // ------------ PROGRESS CHART ------------
             _sectionTitle("Progress Overview"),
             _card(child: ProgressChart()),
             const SizedBox(height: 18),
 
-            // ------------ SUMMARY ------------
             _card(child: ProgressSummary()),
             const SizedBox(height: 18),
 
-            // ------------ INPUT ------------
             _sectionTitle("Add Progress"),
             _card(child: AddProgressInput()),
             const SizedBox(height: 24),

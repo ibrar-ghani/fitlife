@@ -1,115 +1,93 @@
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BadgeController extends GetxController {
-  // Badge thresholds
   final List<int> badgeThresholds = [3, 7, 14];
 
-  RxList<int> earnedBadges = <int>[].obs;
-  RxInt streak = 0.obs;
-  RxString lastActiveDate = ''.obs;
+  final RxList<int> earnedBadges = <int>[].obs;
+  final RxInt streak = 0.obs;
+  final RxString lastActiveDate = ''.obs;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  static const String _kEarnedKey = 'earnedBadges';
-  static const String _kStreakKey = 'currentStreak';
-  static const String _kLastDateKey = 'lastActiveDate';
+  String get _docPath => 'users/${_auth.currentUser?.uid}/badges/data';
 
   @override
   void onInit() {
     super.onInit();
-    _initializeBadgeData();
-  }
-
-  Future<void> _initializeBadgeData() async {
-    await _loadFromLocal();
-    await _loadFromFirebase();
+    _loadFromFirebase();
   }
 
   // ---------------------------------------------------------
-  // 🔥 Local storage
-  // ---------------------------------------------------------
-  Future<void> _loadFromLocal() async {
-    final prefs = await SharedPreferences.getInstance();
-    final earned = prefs.getStringList(_kEarnedKey) ?? [];
-    earnedBadges.assignAll(earned.map((e) => int.tryParse(e) ?? 0).where((v) => v > 0));
-    streak.value = prefs.getInt(_kStreakKey) ?? 0;
-    lastActiveDate.value = prefs.getString(_kLastDateKey) ?? '';
-  }
-
-  Future<void> _saveToLocal() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_kEarnedKey, earnedBadges.map((e) => e.toString()).toList());
-    await prefs.setInt(_kStreakKey, streak.value);
-    await prefs.setString(_kLastDateKey, lastActiveDate.value);
-  }
-
-  // ---------------------------------------------------------
-  // 🔥 Firebase persistence
+  // 🔥 LOAD (Firebase = source of truth)
   // ---------------------------------------------------------
   Future<void> _loadFromFirebase() async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return;
+    final user = _auth.currentUser;
+    if (user == null) return;
 
-      final doc = await _firestore.collection('users').doc(user.uid).get();
-      if (doc.exists) {
-        final data = doc.data()!;
-        streak.value = data['streak'] ?? streak.value;
-        lastActiveDate.value = data['lastActiveDate'] ?? lastActiveDate.value;
-        earnedBadges.assignAll(List<int>.from(data['earnedBadges'] ?? []));
-      }
+    try {
+      final doc = await _firestore.doc(_docPath).get();
+      if (!doc.exists) return;
+
+      final data = doc.data()!;
+      streak.value = data['streak'] ?? 0;
+      lastActiveDate.value = data['lastActiveDate'] ?? '';
+      earnedBadges.assignAll(List<int>.from(data['earnedBadges'] ?? []));
     } catch (e) {
-      print("BadgeController Firebase load error: $e");
+      print('Badge load error: $e');
     }
   }
 
+  // ---------------------------------------------------------
+  // 🔥 SAVE (called explicitly only)
+  // ---------------------------------------------------------
   Future<void> _saveToFirebase() async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return;
+    final user = _auth.currentUser;
+    if (user == null) return;
 
-      await _firestore.collection('users').doc(user.uid).set({
+    try {
+      await _firestore.doc(_docPath).set({
         'streak': streak.value,
         'lastActiveDate': lastActiveDate.value,
-        'earnedBadges': earnedBadges,
-      }, SetOptions(merge: true));
+        'earnedBadges': earnedBadges.toList(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
-      print("BadgeController Firebase save error: $e");
+      print('Badge save error: $e');
     }
   }
 
   // ---------------------------------------------------------
-  // 🔥 Daily activity tracking
+  // 🔥 DAILY ACTIVITY
   // ---------------------------------------------------------
   Future<void> registerDailyActivity(DateTime today) async {
-    final todayStr = _dateOnlyIso(today);
+    final todayDate = _dateOnly(today);
 
-    if (lastActiveDate.value.isEmpty) {
-      streak.value = 1;
-    } else {
+    if (lastActiveDate.value.isNotEmpty) {
       final last = DateTime.parse(lastActiveDate.value);
-      final diffDays = _dateOnly(today).difference(_dateOnly(last)).inDays;
-      if (diffDays == 0) return; // already logged
-      streak.value = diffDays == 1 ? streak.value + 1 : 1;
+      final diff = todayDate.difference(_dateOnly(last)).inDays;
+
+      if (diff == 0) return; // already counted today
+      streak.value = diff == 1 ? streak.value + 1 : 1;
+    } else {
+      streak.value = 1;
     }
 
-    lastActiveDate.value = todayStr;
+    lastActiveDate.value = todayDate.toIso8601String();
     _checkForBadges();
-    await _saveToLocal();
     await _saveToFirebase();
   }
 
   void _checkForBadges() {
-    for (final threshold in badgeThresholds) {
-      if (streak.value >= threshold && !earnedBadges.contains(threshold)) {
-        earnedBadges.add(threshold);
+    for (final t in badgeThresholds) {
+      if (streak.value >= t && !earnedBadges.contains(t)) {
+        earnedBadges.add(t);
+
         Get.snackbar(
-          'Badge earned!',
-          'You earned $threshold-day streak badge 🏅',
+          '🏅 Badge Unlocked',
+          '$t-day streak achieved!',
           snackPosition: SnackPosition.BOTTOM,
         );
       }
@@ -118,14 +96,15 @@ class BadgeController extends GetxController {
 
   bool hasBadge(int days) => earnedBadges.contains(days);
 
-  String _dateOnlyIso(DateTime d) => DateTime(d.year, d.month, d.day).toIso8601String();
   DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
+  // ---------------------------------------------------------
+  // 🔥 RESET (optional)
+  // ---------------------------------------------------------
   Future<void> resetAll() async {
     earnedBadges.clear();
     streak.value = 0;
     lastActiveDate.value = '';
-    await _saveToLocal();
     await _saveToFirebase();
   }
 }

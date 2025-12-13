@@ -23,12 +23,17 @@ class _SleepPageState extends State<SleepPage> {
     if (picked != null) {
       setState(() {
         final dt = DateTime(now.year, now.month, now.day, picked.hour, picked.minute);
-        isBed ? bedTime = dt : wakeTime = dt;
+        if (isBed) {
+          bedTime = dt;
+        } else {
+          wakeTime = dt;
+        }
       });
     }
   }
 
-  String _t(DateTime? t) => t == null ? "--:--" : "${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}";
+  String _formatTime(DateTime? t) =>
+      t == null ? "--:--" : "${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}";
 
   @override
   Widget build(BuildContext context) {
@@ -40,16 +45,16 @@ class _SleepPageState extends State<SleepPage> {
           children: [
             // Average Sleep
             Obx(() => Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Colors.indigo, Colors.blue]),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                "Average Sleep: ${controller.averageSleep().toStringAsFixed(1)} hrs/night",
-                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            )),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [Colors.indigo, Colors.blue]),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    "Average Sleep: ${controller.averageSleep().toStringAsFixed(1)} hrs/night",
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                )),
 
             const SizedBox(height: 18),
 
@@ -61,18 +66,24 @@ class _SleepPageState extends State<SleepPage> {
                 children: [
                   const Text("Track Your Sleep", style: TextStyle(color: Colors.white, fontSize: 18)),
                   const SizedBox(height: 10),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    _timeBox("Bed Time", _t(bedTime), () => pickTime(true)),
-                    _timeBox("Wake Time", _t(wakeTime), () => pickTime(false)),
-                  ]),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _timeBox("Bed Time", _formatTime(bedTime), () => pickTime(true)),
+                      _timeBox("Wake Time", _formatTime(wakeTime), () => pickTime(false)),
+                    ],
+                  ),
                   const SizedBox(height: 10),
                   Text("Sleep Quality", style: const TextStyle(color: Colors.white)),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(5, (i) => IconButton(
-                      icon: Icon(Icons.star, color: i < sleepQuality ? Colors.yellow : Colors.white24),
-                      onPressed: () => setState(() => sleepQuality = i + 1),
-                    )),
+                    children: List.generate(
+                      5,
+                      (i) => IconButton(
+                        icon: Icon(Icons.star, color: i < sleepQuality ? Colors.yellow : Colors.white24),
+                        onPressed: () => setState(() => sleepQuality = i + 1),
+                      ),
+                    ),
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
@@ -97,44 +108,48 @@ class _SleepPageState extends State<SleepPage> {
             const SizedBox(height: 20),
 
             // Sleep Bar Chart
-            Obx(() {
-              if (controller.sleepHistory.isEmpty) return const SizedBox();
-              return SleepBarChart(data: controller.sleepHistory.toList());
-            }),
+            Obx(() => controller.sleepHistory.isEmpty
+                ? const SizedBox()
+                : SleepBarChart(data: controller.sleepHistory.toList())),
 
             const SizedBox(height: 20),
 
-            Align(alignment: Alignment.centerLeft, child: const Text("Sleep History", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: const Text("Sleep History", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
 
             Obx(() => controller.sleepHistory.isEmpty
-              ? const Padding(padding: EdgeInsets.only(top: 20), child: Text("No sleep records yet."))
-              : ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: controller.sleepHistory.length,
-                  itemBuilder: (_, i) {
-                    final e = controller.sleepHistory[i];
-                    return Dismissible(
-                      key: ValueKey(i),
-                      direction: DismissDirection.endToStart,
-                      onDismissed: (_) => controller.deleteSleep(i),
-                      background: Container(
-                        color: Colors.red,
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 20),
-                        child: const Icon(Icons.delete, color: Colors.white),
-                      ),
-                      child: Card(
-                        child: ListTile(
-                          title: Text("${e.hours.toStringAsFixed(1)} hours"),
-                          subtitle: Text("${e.bedTime.day}/${e.bedTime.month}/${e.bedTime.year}"),
-                          trailing: Text("${_t(e.bedTime)} → ${_t(e.wakeTime)}"),
+                ? const Padding(
+                    padding: EdgeInsets.only(top: 20),
+                    child: Text("No sleep records yet."),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: controller.sleepHistory.length,
+                    itemBuilder: (_, i) {
+                      final e = controller.sleepHistory[i];
+                      return Dismissible(
+                        key: ValueKey(e.id),
+                        direction: DismissDirection.endToStart,
+                        onDismissed: (_) => controller.deleteSleep(i),
+                        background: Container(
+                          color: Colors.red,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          child: const Icon(Icons.delete, color: Colors.white),
                         ),
-                      ),
-                    );
-                  },
-                ),
-            )
+                        child: Card(
+                          child: ListTile(
+                            title: Text("${e.hours.toStringAsFixed(1)} hours"),
+                            subtitle: Text("${e.bedTime.day}/${e.bedTime.month}/${e.bedTime.year}"),
+                            trailing: Text("${_formatTime(e.bedTime)} → ${_formatTime(e.wakeTime)}"),
+                          ),
+                        ),
+                      );
+                    },
+                  ))
           ],
         ),
       ),
@@ -146,7 +161,7 @@ class _SleepPageState extends State<SleepPage> {
       children: [
         Text(label, style: const TextStyle(color: Colors.white)),
         Text(time, style: const TextStyle(color: Colors.white, fontSize: 18)),
-        TextButton(onPressed: onTap, child: const Text("Select", style: TextStyle(color: Colors.white70)))
+        TextButton(onPressed: onTap, child: const Text("Select", style: TextStyle(color: Colors.white70))),
       ],
     );
   }

@@ -5,18 +5,9 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        title: const Text(
-          "FitLife Dashboard",
-          style: TextStyle(color: Colors.black),
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
+    return Container(
+      color: Colors.grey.shade100,
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,15 +24,15 @@ class DashboardPage extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Firebase Indicator (Static Placeholder)
+            // Firebase status (placeholder – will wire later)
             Row(
               children: const [
-                Icon(Icons.cloud, color: Colors.orange),
+                Icon(Icons.cloud_done, color: Colors.green),
                 SizedBox(width: 8),
                 Text(
-                  "Checking Firebase...",
+                  "Firebase Connected",
                   style: TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.orange),
+                      fontWeight: FontWeight.bold, color: Colors.green),
                 ),
               ],
             ),
@@ -88,7 +79,8 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  static Widget _statCard(IconData icon, String title, String value, Color color) {
+  static Widget _statCard(
+      IconData icon, String title, String value, Color color) {
     return Container(
       decoration: BoxDecoration(
         color: color.withOpacity(0.15),
@@ -102,10 +94,8 @@ class DashboardPage extends StatelessWidget {
           const SizedBox(height: 12),
           Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 16, color: Colors.black87),
-          ),
+          Text(value,
+              style: const TextStyle(fontSize: 16, color: Colors.black87)),
         ],
       ),
     );

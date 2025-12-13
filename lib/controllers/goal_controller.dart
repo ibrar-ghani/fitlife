@@ -1,93 +1,61 @@
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class GoalController extends GetxController {
-  static const String _kGoalKey = 'dailyGoal';
-
-  // Current goal value (e.g., distance in km)
-  RxDouble goal = 0.0.obs;
-
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  RxDouble goal = 0.0.obs;
+  RxBool isLoading = true.obs;
 
   @override
   void onInit() {
     super.onInit();
-    _loadGoal();
+    _bindGoal();
   }
 
-  // ---------------------------------------------------------
-  // 🔥 Load goal from Firebase, fallback to local storage
-  // ---------------------------------------------------------
-  Future<void> _loadGoal() async {
+  void _bindGoal() {
     final user = _auth.currentUser;
-    bool loadedFromFirebase = false;
-
-    if (user != null) {
-      try {
-        final doc = await _firestore.collection('users').doc(user.uid).get();
-        if (doc.exists && doc.data()?['goal'] != null) {
-          goal.value = (doc.data()?['goal'] ?? 0.0).toDouble();
-          loadedFromFirebase = true;
-        }
-      } catch (e) {
-        print("Firebase loadGoal error: $e");
-      }
+    if (user == null) {
+      isLoading.value = false;
+      return;
     }
 
-    if (!loadedFromFirebase) {
-      final prefs = await SharedPreferences.getInstance();
-      goal.value = prefs.getDouble(_kGoalKey) ?? 0.0;
-    }
+    _firestore.doc('users/${user.uid}/dailyGoal').snapshots().listen(
+      (doc) {
+        final val = doc.data()?['value'];
+        goal.value = val != null ? (val as num).toDouble() : 0.0;
+        isLoading.value = false;
+      },
+      onError: (e) {
+        isLoading.value = false;
+        print('Goal stream error: $e');
+      },
+    );
   }
 
-  // ---------------------------------------------------------
-  // 🔥 Set a new goal
-  // ---------------------------------------------------------
-  Future<void> setGoal(double newGoal) async {
-    goal.value = newGoal;
-
+  Future<void> setGoal(double val) async {
     final user = _auth.currentUser;
+    if (user == null) return;
 
-    // Save to Firebase
-    if (user != null) {
-      try {
-        await _firestore.collection('users').doc(user.uid).set({
-          'goal': goal.value,
-        }, SetOptions(merge: true));
-      } catch (e) {
-        print("Firebase setGoal error: $e");
-      }
+    goal.value = val;
+    try {
+      await _firestore.doc('users/${user.uid}/dailyGoal').set({'value': val});
+    } catch (e) {
+      print("Error saving goal: $e");
     }
-
-    // Save locally
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(_kGoalKey, newGoal);
   }
 
-  // ---------------------------------------------------------
-  // 🔥 Clear the current goal
-  // ---------------------------------------------------------
   Future<void> clearGoal() async {
-    goal.value = 0.0;
-
     final user = _auth.currentUser;
+    if (user == null) return;
 
-    // Remove from Firebase
-    if (user != null) {
-      try {
-        await _firestore.collection('users').doc(user.uid).update({
-          'goal': FieldValue.delete(),
-        });
-      } catch (e) {
-        print("Firebase clearGoal error: $e");
-      }
+    goal.value = 0.0;
+    try {
+      await _firestore.doc('users/${user.uid}/dailyGoal').delete();
+    } catch (e) {
+      print("Error clearing goal: $e");
     }
-
-    // Remove locally
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_kGoalKey);
   }
 }

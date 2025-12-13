@@ -1,5 +1,5 @@
 class SleepEntry {
-  final String id; // Firestore document ID
+  final String id;
   final DateTime bedTime;
   final DateTime wakeTime;
   final int quality;
@@ -11,18 +11,22 @@ class SleepEntry {
     required this.quality,
   });
 
-  double get hours => wakeTime.difference(bedTime).inMinutes / 60;
+  double get hours => wakeTime.difference(bedTime).inMinutes / 60.0;
 
-  Map<String, dynamic> toMap() => {
-        'bedTime': bedTime.toIso8601String(),
-        'wakeTime': wakeTime.toIso8601String(),
-        'quality': quality,
-      };
+  factory SleepEntry.fromMap(Map<String, dynamic> map, String id) {
+    return SleepEntry(
+      id: id,
+      bedTime: DateTime.parse(map['bedTime']),
+      wakeTime: DateTime.parse(map['wakeTime']),
+      quality: map['quality'] ?? 3,
+    );
+  }
 
-  factory SleepEntry.fromMap(Map<String, dynamic> map, String docId) => SleepEntry(
-        id: docId,
-        bedTime: DateTime.parse(map['bedTime']),
-        wakeTime: DateTime.parse(map['wakeTime']),
-        quality: map['quality'] ?? 3,
-      );
+  Map<String, dynamic> toMap() {
+    return {
+      'bedTime': bedTime.toIso8601String(),
+      'wakeTime': wakeTime.toIso8601String(),
+      'quality': quality,
+    };
+  }
 }

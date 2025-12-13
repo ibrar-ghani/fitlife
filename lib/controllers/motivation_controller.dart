@@ -9,7 +9,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class MotivationController extends GetxController {
   final AuthController auth = Get.find();
 
-  // State
   RxBool isLoading = false.obs;
   RxList<String> quotes = <String>[].obs;
 
@@ -20,11 +19,9 @@ class MotivationController extends GetxController {
     "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
   ];
 
-  // Video controllers
   RxMap<int, VideoPlayerController> videoControllers = <int, VideoPlayerController>{}.obs;
   RxMap<int, ChewieController> chewieControllers = <int, ChewieController>{}.obs;
 
-  // Likes state
   RxMap<int, bool> likedVideos = <int, bool>{}.obs;
   RxMap<int, int> likeCounts = <int, int>{}.obs;
 
@@ -36,20 +33,18 @@ class MotivationController extends GetxController {
     _loadLikes();
   }
 
-  /// Initialize video players safely
   Future<void> _initializeReels() async {
     for (int i = 0; i < videoLinks.length; i++) {
       final vc = VideoPlayerController.networkUrl(
         Uri.parse(videoLinks[i]),
         videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
       );
-
       await vc.initialize();
       vc.setLooping(true);
 
       final chewie = ChewieController(
         videoPlayerController: vc,
-        autoPlay: i == 0, // autoplay first video
+        autoPlay: i == 0,
         looping: true,
         showControls: false,
       );
@@ -60,26 +55,24 @@ class MotivationController extends GetxController {
     update();
   }
 
-  /// Fetch daily quote from API or Firestore
   Future<void> _fetchQuote() async {
     if (auth.user == null) return;
     isLoading.value = true;
 
     try {
       final uid = auth.user!.uid;
-      final doc = FirebaseFirestore.instance
+      final docRef = FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
           .collection('motivation')
           .doc('dailyQuote');
 
       final today = DateTime.now().toIso8601String().split('T')[0];
-      final snapshot = await doc.get();
+      final snapshot = await docRef.get();
 
       if (!snapshot.exists || snapshot['date'] != today) {
-        // Fetch new quote from API
+        // Fetch quote from API
         String newQuote = "Stay strong 💪 Keep moving";
-
         final response = await http.get(Uri.parse("https://zenquotes.io/api/random"));
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
@@ -87,22 +80,18 @@ class MotivationController extends GetxController {
         }
 
         quotes.value = [newQuote];
-
-        await doc.set({
-          'quote': newQuote,
-          'date': today,
-        });
+        await docRef.set({'quote': newQuote, 'date': today});
       } else {
         quotes.value = [snapshot['quote']];
       }
     } catch (e) {
       quotes.value = ["Stay strong 💪 Keep moving"];
+      print("Error fetching quote: $e");
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Load likes from Firestore
   Future<void> _loadLikes() async {
     if (auth.user == null) return;
     final uid = auth.user!.uid;
@@ -122,11 +111,10 @@ class MotivationController extends GetxController {
         }
       }
     } catch (e) {
-      print("MotivationController loadLikes error: $e");
+      print("Error loading likes: $e");
     }
   }
 
-  /// Handle double-tap like
   Future<void> handleLike(int index) async {
     if (auth.user == null) return;
     final uid = auth.user!.uid;
@@ -141,12 +129,9 @@ class MotivationController extends GetxController {
           .doc(uid)
           .collection('motivationLikes')
           .doc(index.toString())
-          .set({
-        'liked': true,
-        'timestamp': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+          .set({'liked': true, 'timestamp': FieldValue.serverTimestamp()}, SetOptions(merge: true));
     } catch (e) {
-      print("MotivationController handleLike error: $e");
+      print("Error handling like: $e");
     }
   }
 

@@ -1,4 +1,7 @@
 import 'package:fitlife/controllers/auth_controller.dart';
+import 'package:fitlife/controllers/badge_controller.dart';
+import 'package:fitlife/controllers/bottom_nav_controller.dart';
+import 'package:fitlife/controllers/goal_controller.dart';
 import 'package:fitlife/controllers/motivation_controller.dart';
 import 'package:fitlife/controllers/progress_controoler.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +32,12 @@ Future<void> main() async {
   Get.put(AuthController(), permanent: true);
   Get.put(ProgressController(), permanent: true);
   Get.put(MotivationController(), permanent: true);
+  Get.put(BottomNavController(), permanent: true);
+  Get.put(BadgeController(), permanent: true);
+  Get.put(MotivationController(), permanent: true);
+  Get.put(ProgressController(), permanent: true);
+  Get.put(BadgeController(), permanent: true);
+  Get.put(GoalController()  , permanent: true);
 
   runApp(const FitLifeApp());
 }

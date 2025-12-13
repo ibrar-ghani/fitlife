@@ -1,32 +1,42 @@
-import 'package:fitlife/views/dashboard/dashboard_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/bottom_nav_controller.dart';
+import 'dashboard/dashboard_page.dart';
 import 'progress/progress_page.dart';
 import 'motivation_page.dart';
 import 'water_page.dart';
-import 'sleep_page.dart'; // ✅ NEW IMPORT
+import 'sleep_page.dart';
 
 class HomePage extends StatelessWidget {
-  final BottomNavController navController = Get.put(BottomNavController());
+  HomePage({super.key});
 
-  final pages = [
-    DashboardPage(),
-    ProgressPage(),
-    MotivationPage(),
+  // Find controller (already injected once)
+  final BottomNavController navController =
+      Get.find<BottomNavController>();
+
+  final List<Widget> pages = [
+    const DashboardPage(),
+    const ProgressPage(),
+    const MotivationPage(),
     WaterPage(),
-    SleepPage(), // ✅ ADDED
+    const SleepPage(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Obx(() => Scaffold(
-          appBar: AppBar(title: const Text('FitLife')),
-          body: pages[navController.currentIndex.value],
+          appBar: AppBar(
+            title: const Text('FitLife'),
+            centerTitle: true,
+          ),
+          body: IndexedStack(
+            index: navController.currentIndex.value,
+            children: pages,
+          ),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: navController.currentIndex.value,
             onTap: navController.changeTab,
-            type: BottomNavigationBarType.fixed, // ✅ IMPORTANT for 4 tabs
+            type: BottomNavigationBarType.fixed,
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.dashboard),
@@ -45,7 +55,7 @@ class HomePage extends StatelessWidget {
                 label: 'Water',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.nightlight_round), // 🌙 SLEEP ICON
+                icon: Icon(Icons.nightlight_round),
                 label: 'Sleep',
               ),
             ],
