@@ -35,6 +35,9 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
     for (int i = 0; i < controller.videoLinks.length; i++) {
       showHeart[i] = false;
     }
+
+    // Initialize first video when page opens
+    controller.initializeVideo(0);
   }
 
   void _handleDoubleTap(int index) {
@@ -49,9 +52,7 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
     });
   }
 
-  void _shareVideo(String url) {
-    Share.share("🔥 FitLife Motivation Reel\n$url");
-  }
+  void _shareVideo(String url) => Share.share("🔥 FitLife Motivation Reel\n$url");
 
   void _showComments() {
     showModalBottomSheet(
@@ -73,8 +74,12 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
     );
   }
 
-  void _onPageChanged(int index) {
+  void _onPageChanged(int index) async {
+    // Pause all other videos
     controller.videoControllers.forEach((key, vc) => vc.pause());
+
+    // Lazy initialize and play current video
+    await controller.initializeVideo(index);
     controller.videoControllers[index]?.play();
   }
 
@@ -101,7 +106,7 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
             return Stack(
               fit: StackFit.expand,
               children: [
-                /// Video
+                // Video
                 GestureDetector(
                   onDoubleTap: () => _handleDoubleTap(index),
                   child: FittedBox(
@@ -114,7 +119,7 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
                   ),
                 ),
 
-                /// Quote Overlay
+                // Quote overlay
                 Positioned(
                   left: 16,
                   right: 80,
@@ -125,7 +130,7 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
                   ),
                 ),
 
-                /// Heart Animation
+                // Heart animation
                 if (showHeart[index] == true)
                   Center(
                     child: ScaleTransition(
@@ -134,7 +139,7 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
                     ),
                   ),
 
-                /// Sidebar
+                // Sidebar actions
                 Positioned(
                   right: 12,
                   bottom: 140,

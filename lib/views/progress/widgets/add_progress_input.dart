@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../controllers/progress_controoler.dart';
-import '../../../controllers/badge_controller.dart';
 
 class AddProgressInput extends StatelessWidget {
   AddProgressInput({super.key});
 
   final TextEditingController input = TextEditingController();
   final ProgressController progressController = Get.find<ProgressController>();
-  final BadgeController badgeController = Get.find<BadgeController>();
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +37,6 @@ class AddProgressInput extends StatelessWidget {
             }
 
             await progressController.addProgress(value);
-            await badgeController.registerDailyActivity(DateTime.now());
 
             input.clear();
 

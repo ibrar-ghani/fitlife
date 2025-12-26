@@ -4,77 +4,84 @@ import 'package:firebase_auth/firebase_auth.dart';
 class AuthController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Firebase user stream
-  Rxn<User> firebaseUser = Rxn<User>();
+  /// Reactive Firebase user
+  final Rxn<User> firebaseUser = Rxn<User>();
 
   @override
   void onInit() {
     super.onInit();
 
-    // Firebase is initialized in main.dart — DO NOT initialize here!
+    // ✅ Bind auth state stream (non-blocking)
     firebaseUser.bindStream(_auth.authStateChanges());
   }
 
-  // ---------------------------------------------------------
-  // 🔥 GET CURRENT USER
-  // ---------------------------------------------------------
+  /// Get current user
   User? get user => firebaseUser.value;
 
   // ---------------------------------------------------------
-  // 🔥 LOGIN USER
+  // 🔐 LOGIN
   // ---------------------------------------------------------
   Future<String?> login(String email, String password) async {
     try {
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password.trim(),
+      );
       return null;
-    } catch (e) {
+    } on FirebaseAuthException catch (e) {
       return _handleAuthError(e);
+    } catch (_) {
+      return "Unexpected error occurred. Please try again.";
     }
   }
 
   // ---------------------------------------------------------
-  // 🔥 REGISTER NEW USER
+  // 📝 REGISTER
   // ---------------------------------------------------------
   Future<String?> register(String email, String password) async {
     try {
-      await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password.trim(),
+      );
       return null;
-    } catch (e) {
+    } on FirebaseAuthException catch (e) {
       return _handleAuthError(e);
+    } catch (_) {
+      return "Unexpected error occurred. Please try again.";
     }
   }
 
   // ---------------------------------------------------------
-  // 🔥 LOGOUT
+  // 🚪 LOGOUT
   // ---------------------------------------------------------
   Future<void> logout() async {
     try {
       await _auth.signOut();
     } catch (e) {
-      print("Logout Error: $e");
+      Get.log("Logout error: $e");
     }
   }
 
   // ---------------------------------------------------------
-  // 🔥 ERROR HANDLER
+  // ❌ ERROR HANDLER (SAFE + CLEAN)
   // ---------------------------------------------------------
-  String _handleAuthError(Object error) {
-    final String message = error.toString();
-
-    if (message.contains("wrong-password")) {
-      return "Incorrect password. Please try again.";
-    } else if (message.contains("user-not-found")) {
-      return "No user found with this email.";
-    } else if (message.contains("invalid-email")) {
-      return "Invalid email address.";
-    } else if (message.contains("email-already-in-use")) {
-      return "This email is already registered.";
-    } else if (message.contains("too-many-requests")) {
-      return "Too many attempts. Try again later.";
-    } else if (message.contains("network-request-failed")) {
-      return "No internet connection. Please check your network.";
+  String _handleAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'wrong-password':
+        return "Incorrect password. Please try again.";
+      case 'user-not-found':
+        return "No user found with this email.";
+      case 'invalid-email':
+        return "Invalid email address.";
+      case 'email-already-in-use':
+        return "This email is already registered.";
+      case 'too-many-requests':
+        return "Too many attempts. Try again later.";
+      case 'network-request-failed':
+        return "No internet connection.";
+      default:
+        return e.message ?? "Authentication failed.";
     }
-
-    return "Authentication error: $message";
   }
 }

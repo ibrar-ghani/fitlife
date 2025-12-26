@@ -8,6 +8,7 @@ class SleepController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   RxList<SleepEntry> sleepHistory = <SleepEntry>[].obs;
+  RxBool isLoading = true.obs;
 
   @override
   void onInit() {
@@ -15,57 +16,86 @@ class SleepController extends GetxController {
     _loadSleepData();
   }
 
+  /// 🔥 Load all sleep entries for the current user
   Future<void> _loadSleepData() async {
-    if (auth.user == null) return;
-    final uid = auth.user!.uid;
+    final user = auth.user;
+    if (user == null) {
+      isLoading.value = false;
+      return;
+    }
 
-    final snapshot = await _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('sleep')
-        .orderBy('bedTime', descending: true)
-        .get();
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('sleep')
+          .orderBy('bedTime', descending: true)
+          .get();
 
-    sleepHistory.assignAll(snapshot.docs
-        .map((doc) => SleepEntry.fromMap(doc.data(), doc.id))
-        .toList());
+      final entries = snapshot.docs
+          .map((doc) => SleepEntry.fromMap(doc.data(), doc.id))
+          .toList();
+
+      sleepHistory.assignAll(entries);
+    } catch (e) {
+      print("Error loading sleep data: $e");
+    } finally {
+      isLoading.value = false;
+    }
   }
 
+  /// 🔥 Add a new sleep entry
   Future<void> addSleep(DateTime bedTime, DateTime wakeTime, int quality) async {
-    if (auth.user == null) return;
-    final uid = auth.user!.uid;
+    final user = auth.user;
+    if (user == null) return;
 
-    final docRef = await _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('sleep')
-        .add({
-      'bedTime': bedTime.toIso8601String(),
-      'wakeTime': wakeTime.toIso8601String(),
-      'quality': quality,
-    });
+    try {
+      final docRef = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('sleep')
+          .add({
+        'bedTime': bedTime.toIso8601String(),
+        'wakeTime': wakeTime.toIso8601String(),
+        'quality': quality,
+      });
 
-    final entry = SleepEntry(id: docRef.id, bedTime: bedTime, wakeTime: wakeTime, quality: quality);
-    sleepHistory.insert(0, entry);
+      final entry = SleepEntry(
+        id: docRef.id,
+        bedTime: bedTime,
+        wakeTime: wakeTime,
+        quality: quality,
+      );
+
+      sleepHistory.insert(0, entry);
+    } catch (e) {
+      print("Error adding sleep entry: $e");
+    }
   }
 
+  /// 🔥 Delete a sleep entry by index
   Future<void> deleteSleep(int index) async {
-    if (auth.user == null || index >= sleepHistory.length) return;
-    final uid = auth.user!.uid;
+    final user = auth.user;
+    if (user == null || index >= sleepHistory.length) return;
 
     final entry = sleepHistory[index];
-    await _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('sleep')
-        .doc(entry.id)
-        .delete();
 
-    sleepHistory.removeAt(index);
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('sleep')
+          .doc(entry.id)
+          .delete();
+
+      sleepHistory.removeAt(index);
+    } catch (e) {
+      print("Error deleting sleep entry: $e");
+    }
   }
 
-  double averageSleep() {
-    if (sleepHistory.isEmpty) return 0.0;
-    return sleepHistory.map((e) => e.hours).reduce((a, b) => a + b) / sleepHistory.length;
-  }
+  /// 🔥 Compute average sleep in hours
+  double get average => sleepHistory.isEmpty
+      ? 0.0
+      : sleepHistory.map((e) => e.hours).reduce((a, b) => a + b) / sleepHistory.length;
 }

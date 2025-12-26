@@ -1,43 +1,24 @@
-import 'package:fitlife/controllers/auth_controller.dart';
-import 'package:fitlife/controllers/badge_controller.dart';
-import 'package:fitlife/controllers/bottom_nav_controller.dart';
-import 'package:fitlife/controllers/goal_controller.dart';
-import 'package:fitlife/controllers/motivation_controller.dart';
-import 'package:fitlife/controllers/progress_controoler.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_core/firebase_core.dart';
+
 import 'firebase_options.dart';
-import 'views/home_page.dart';
+import 'controllers/auth_controller.dart';
 import 'views/auth/login_page.dart';
+import 'views/home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Ensure Firebase is only initialized once
-  try {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      print("✅ Firebase initialized successfully.");
-    } else {
-      print("ℹ Firebase already initialized.");
-    }
-  } catch (e) {
-    print("❌ Firebase initialization error: $e");
+  // Initialize Firebase safely
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   }
 
-  // Inject controllers AFTER Firebase initialization
-  Get.put(AuthController(), permanent: true);
-  Get.put(ProgressController(), permanent: true);
-  Get.put(MotivationController(), permanent: true);
-  Get.put(BottomNavController(), permanent: true);
-  Get.put(BadgeController(), permanent: true);
-  Get.put(MotivationController(), permanent: true);
-  Get.put(ProgressController(), permanent: true);
-  Get.put(BadgeController(), permanent: true);
-  Get.put(GoalController()  , permanent: true);
+  // Initialize AuthController once
+  Get.put<AuthController>(AuthController(), permanent: true);
 
   runApp(const FitLifeApp());
 }
@@ -54,10 +35,20 @@ class FitLifeApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.purple),
         useMaterial3: true,
       ),
-      home: Obx(() {
-        final auth = Get.find<AuthController>();
-        return auth.user == null ? LoginPage() : HomePage();
-      }),
+      home: HomeOrLogin(),
     );
+  }
+}
+
+class HomeOrLogin extends StatelessWidget {
+  HomeOrLogin({super.key});
+
+  final AuthController auth = Get.find();
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      return auth.user == null ? LoginPage() : HomePage();
+    });
   }
 }

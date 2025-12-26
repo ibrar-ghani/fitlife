@@ -9,7 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class MotivationController extends GetxController {
   final AuthController auth = Get.find();
 
-  RxBool isLoading = false.obs;
+  RxBool isLoadingQuote = false.obs;
   RxList<String> quotes = <String>[].obs;
 
   // Demo video URLs
@@ -28,36 +28,45 @@ class MotivationController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _initializeReels();
-    _fetchQuote();
-    _loadLikes();
+    // Load quotes and likes asynchronously
+    Future.microtask(() {
+      _fetchQuote();
+      _loadLikes();
+    });
   }
 
-  Future<void> _initializeReels() async {
-    for (int i = 0; i < videoLinks.length; i++) {
+  /// Initialize a single video on demand
+  Future<void> initializeVideo(int index) async {
+    if (videoControllers.containsKey(index)) return;
+
+    try {
       final vc = VideoPlayerController.networkUrl(
-        Uri.parse(videoLinks[i]),
+        Uri.parse(videoLinks[index]),
         videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
       );
+
       await vc.initialize();
       vc.setLooping(true);
 
       final chewie = ChewieController(
         videoPlayerController: vc,
-        autoPlay: i == 0,
+        autoPlay: true, // Start playing immediately
         looping: true,
         showControls: false,
       );
 
-      videoControllers[i] = vc;
-      chewieControllers[i] = chewie;
+      videoControllers[index] = vc;
+      chewieControllers[index] = chewie;
+      update();
+    } catch (e) {
+      print("Error initializing video $index: $e");
     }
-    update();
   }
 
+  /// Fetch daily quote from Firestore / API
   Future<void> _fetchQuote() async {
     if (auth.user == null) return;
-    isLoading.value = true;
+    isLoadingQuote.value = true;
 
     try {
       final uid = auth.user!.uid;
@@ -71,13 +80,15 @@ class MotivationController extends GetxController {
       final snapshot = await docRef.get();
 
       if (!snapshot.exists || snapshot['date'] != today) {
-        // Fetch quote from API
         String newQuote = "Stay strong 💪 Keep moving";
-        final response = await http.get(Uri.parse("https://zenquotes.io/api/random"));
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          newQuote = "${data[0]['q']} — ${data[0]['a']}";
-        }
+
+        try {
+          final response = await http.get(Uri.parse("https://zenquotes.io/api/random"));
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            newQuote = "${data[0]['q']} — ${data[0]['a']}";
+          }
+        } catch (_) {}
 
         quotes.value = [newQuote];
         await docRef.set({'quote': newQuote, 'date': today});
@@ -88,10 +99,11 @@ class MotivationController extends GetxController {
       quotes.value = ["Stay strong 💪 Keep moving"];
       print("Error fetching quote: $e");
     } finally {
-      isLoading.value = false;
+      isLoadingQuote.value = false;
     }
   }
 
+  /// Load likes from Firestore
   Future<void> _loadLikes() async {
     if (auth.user == null) return;
     final uid = auth.user!.uid;
@@ -115,6 +127,7 @@ class MotivationController extends GetxController {
     }
   }
 
+  /// Handle like button
   Future<void> handleLike(int index) async {
     if (auth.user == null) return;
     final uid = auth.user!.uid;

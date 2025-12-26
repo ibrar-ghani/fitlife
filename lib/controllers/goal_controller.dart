@@ -6,8 +6,8 @@ class GoalController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  RxDouble goal = 0.0.obs;
-  RxBool isLoading = true.obs;
+  final RxDouble goal = 0.0.obs;
+  final RxBool isLoading = false.obs;
 
   @override
   void onInit() {
@@ -17,45 +17,56 @@ class GoalController extends GetxController {
 
   void _bindGoal() {
     final user = _auth.currentUser;
-    if (user == null) {
-      isLoading.value = false;
-      return;
-    }
+    if (user == null) return;
 
-    _firestore.doc('users/${user.uid}/dailyGoal').snapshots().listen(
-      (doc) {
-        final val = doc.data()?['value'];
-        goal.value = val != null ? (val as num).toDouble() : 0.0;
-        isLoading.value = false;
-      },
-      onError: (e) {
-        isLoading.value = false;
-        print('Goal stream error: $e');
-      },
+    /// ✅ Bind stream instead of manual listen
+    goal.bindStream(
+      _firestore
+          .collection('users')
+          .doc(user.uid)
+          .snapshots()
+          .map((doc) {
+        final data = doc.data();
+        if (data == null) return 0.0;
+        return (data['dailyGoal'] ?? 0).toDouble();
+      }),
     );
   }
 
-  Future<void> setGoal(double val) async {
+  // ---------------------------------------------------------
+  // 🎯 SET GOAL
+  // ---------------------------------------------------------
+  Future<void> setGoal(double value) async {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    goal.value = val;
+    goal.value = value;
+
     try {
-      await _firestore.doc('users/${user.uid}/dailyGoal').set({'value': val});
+      await _firestore.collection('users').doc(user.uid).set(
+        {'dailyGoal': value},
+        SetOptions(merge: true),
+      );
     } catch (e) {
-      print("Error saving goal: $e");
+      Get.log("Goal save error: $e");
     }
   }
 
+  // ---------------------------------------------------------
+  // 🧹 CLEAR GOAL
+  // ---------------------------------------------------------
   Future<void> clearGoal() async {
     final user = _auth.currentUser;
     if (user == null) return;
 
     goal.value = 0.0;
+
     try {
-      await _firestore.doc('users/${user.uid}/dailyGoal').delete();
+      await _firestore.collection('users').doc(user.uid).update({
+        'dailyGoal': FieldValue.delete(),
+      });
     } catch (e) {
-      print("Error clearing goal: $e");
+      Get.log("Goal clear error: $e");
     }
   }
 }

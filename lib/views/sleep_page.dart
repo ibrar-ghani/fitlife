@@ -44,17 +44,22 @@ class _SleepPageState extends State<SleepPage> {
         child: Column(
           children: [
             // Average Sleep
+            
             Obx(() => Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Colors.indigo, Colors.blue]),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    "Average Sleep: ${controller.averageSleep().toStringAsFixed(1)} hrs/night",
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                )),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [Colors.indigo, Colors.blue]),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+       "Average Sleep: ${controller.average.toStringAsFixed(1)} hrs/night",
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    )),
 
             const SizedBox(height: 18),
 

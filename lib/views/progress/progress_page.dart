@@ -1,14 +1,11 @@
 // lib/views/progress/progress_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-import '../../controllers/badge_controller.dart';
 import '../../controllers/goal_controller.dart';
 import '../../controllers/water_controller.dart';
 
 import 'widgets/steps_widegt.dart';
 import 'widgets/goal_card.dart';
-import 'widgets/badges_row.dart';
 import 'widgets/progress_chart.dart';
 import 'widgets/progress_summary.dart';
 import 'widgets/add_progress_input.dart';
@@ -19,8 +16,6 @@ class ProgressPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // ✅ Retrieve existing controllers (NO creation)
-    final BadgeController badgeController =
-        Get.find<BadgeController>();
     final GoalController goalController =
         Get.find<GoalController>();
     final WaterController waterController =
@@ -42,9 +37,9 @@ class ProgressPage extends StatelessWidget {
             _card(child: GoalCard()),
             const SizedBox(height: 18),
 
-            _sectionTitle("Achievements"),
-            _card(child: BadgesRow()),
-            const SizedBox(height: 18),
+            // _sectionTitle("Achievements"),
+            // _card(child: BadgesRow()),
+            // const SizedBox(height: 18),
 
             _sectionTitle("Progress Overview"),
             _card(child: ProgressChart()),
