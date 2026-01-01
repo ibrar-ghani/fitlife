@@ -35,9 +35,6 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
     for (int i = 0; i < controller.videoLinks.length; i++) {
       showHeart[i] = false;
     }
-
-    // Initialize first video when page opens
-    controller.initializeVideo(0);
   }
 
   void _handleDoubleTap(int index) {
@@ -78,7 +75,7 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
     // Pause all other videos
     controller.videoControllers.forEach((key, vc) => vc.pause());
 
-    // Lazy initialize and play current video
+    // Lazy initialize current video & play
     await controller.initializeVideo(index);
     controller.videoControllers[index]?.play();
   }
@@ -88,7 +85,10 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
     return Scaffold(
       backgroundColor: Colors.black,
       body: Obx(() {
-        if (controller.chewieControllers.isEmpty) return const Center(child: CircularProgressIndicator());
+        // Observe chewieControllers keys (reactive)
+        if (controller.chewieControllers.keys.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
         return PageView.builder(
           controller: _pageController,
@@ -106,7 +106,6 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
             return Stack(
               fit: StackFit.expand,
               children: [
-                // Video
                 GestureDetector(
                   onDoubleTap: () => _handleDoubleTap(index),
                   child: FittedBox(
@@ -124,10 +123,10 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
                   left: 16,
                   right: 80,
                   bottom: 140,
-                  child: Text(
-                    controller.quotes.isNotEmpty ? controller.quotes.first : "Stay strong 💪 Keep moving",
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
+                  child: Obx(() => Text(
+                        controller.quotes.isNotEmpty ? controller.quotes.first : "Stay strong 💪 Keep moving",
+                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+                      )),
                 ),
 
                 // Heart animation
@@ -145,15 +144,15 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
                   bottom: 140,
                   child: Column(
                     children: [
-                      IconButton(
-                        icon: Icon(
-                          controller.likedVideos[index] == true ? Icons.favorite : Icons.favorite_border,
-                          color: controller.likedVideos[index] == true ? Colors.red : Colors.white,
-                          size: 32,
-                        ),
-                        onPressed: () => _handleDoubleTap(index),
-                      ),
-                      Text('${controller.likeCounts[index] ?? 0}', style: const TextStyle(color: Colors.white)),
+                      Obx(() => IconButton(
+                            icon: Icon(
+                              controller.likedVideos[index] == true ? Icons.favorite : Icons.favorite_border,
+                              color: controller.likedVideos[index] == true ? Colors.red : Colors.white,
+                              size: 32,
+                            ),
+                            onPressed: () => _handleDoubleTap(index),
+                          )),
+                      Obx(() => Text('${controller.likeCounts[index] ?? 0}', style: const TextStyle(color: Colors.white))),
                       const SizedBox(height: 20),
                       IconButton(icon: const Icon(Icons.comment, color: Colors.white), onPressed: _showComments),
                       const Text("Comment", style: TextStyle(color: Colors.white)),

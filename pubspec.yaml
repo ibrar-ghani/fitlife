@@ -11,29 +11,25 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # UI & state management
+  # Core UI & State
   cupertino_icons: ^1.0.5
   get: ^4.6.6
-  getwidget: ^7.0.0
-  fl_chart: ^1.1.1
-  lottie: ^3.3.2
 
-  # Networking & utilities
-  http: ^1.2.0
-  url_launcher: ^6.3.2
-  share_plus: ^12.0.1
+  # Charts
+  fl_chart: ^1.1.1
+
+  # Local storage
   shared_preferences: ^2.3.2
 
-  # Video & media
-  youtube_player_flutter: ^9.1.3
+  # Video (ONLY one stack)
   video_player: ^2.10.1
   chewie: ^1.13.0
 
-  # Firebase
+  # Firebase (MINIMAL)
   firebase_core: ^4.2.1
   firebase_auth: ^6.1.2
   cloud_firestore: ^6.1.0
-  firebase_storage: ^13.0.4
+  share_plus: ^12.0.1
 
 dev_dependencies:
   flutter_test:
@@ -43,15 +39,13 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Assets (add your assets here)
-  # assets:
-  #   - assets/images/
-  #   - assets/videos/
+  assets:
+   # - assets/videos/
 
-  # Fonts (example, add your custom fonts)
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: assets/fonts/Schyler-Regular.ttf
-  #       - asset: assets/fonts/Schyler-Italic.ttf
-  #         style: italic
+  fonts:
+    - family: Poppins
+      fonts:
+       # - asset: assets/fonts/Poppins-Regular.ttf
+       #- asset: assets/fonts/Poppins-Medium.ttf
+       # - asset: assets/fonts/Poppins-SemiBold.ttf
+       # - asset: assets/fonts/Poppins-Bold.ttf

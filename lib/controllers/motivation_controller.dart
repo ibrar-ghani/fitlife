@@ -9,33 +9,32 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class MotivationController extends GetxController {
   final AuthController auth = Get.find();
 
-  RxBool isLoadingQuote = false.obs;
+  // Quotes
   RxList<String> quotes = <String>[].obs;
 
-  // Demo video URLs
+  // Video URLs
   final List<String> videoLinks = [
     "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
     "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
     "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
   ];
 
+  // Lazy-loaded video controllers
   RxMap<int, VideoPlayerController> videoControllers = <int, VideoPlayerController>{}.obs;
   RxMap<int, ChewieController> chewieControllers = <int, ChewieController>{}.obs;
 
+  // Likes
   RxMap<int, bool> likedVideos = <int, bool>{}.obs;
   RxMap<int, int> likeCounts = <int, int>{}.obs;
 
   @override
   void onInit() {
     super.onInit();
-    // Load quotes and likes asynchronously
-    Future.microtask(() {
-      _fetchQuote();
-      _loadLikes();
-    });
+    _fetchQuote();
+    initializeVideo(0); // Load first video
   }
 
-  /// Initialize a single video on demand
+  /// Initialize video lazily
   Future<void> initializeVideo(int index) async {
     if (videoControllers.containsKey(index)) return;
 
@@ -44,29 +43,45 @@ class MotivationController extends GetxController {
         Uri.parse(videoLinks[index]),
         videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
       );
-
       await vc.initialize();
       vc.setLooping(true);
 
       final chewie = ChewieController(
         videoPlayerController: vc,
-        autoPlay: true, // Start playing immediately
+        autoPlay: true,
         looping: true,
         showControls: false,
       );
 
       videoControllers[index] = vc;
       chewieControllers[index] = chewie;
-      update();
     } catch (e) {
-      print("Error initializing video $index: $e");
+      print("Video $index initialization failed: $e");
     }
   }
 
-  /// Fetch daily quote from Firestore / API
+  /// Like a video
+  Future<void> handleLike(int index) async {
+    if (auth.user == null) return;
+
+    likedVideos[index] = true;
+    likeCounts[index] = (likeCounts[index] ?? 0) + 1;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(auth.user!.uid)
+          .collection('motivationLikes')
+          .doc(index.toString())
+          .set({'liked': true, 'timestamp': FieldValue.serverTimestamp()});
+    } catch (e) {
+      print("Error saving like: $e");
+    }
+  }
+
+  /// Fetch daily quote
   Future<void> _fetchQuote() async {
     if (auth.user == null) return;
-    isLoadingQuote.value = true;
 
     try {
       final uid = auth.user!.uid;
@@ -79,9 +94,9 @@ class MotivationController extends GetxController {
       final today = DateTime.now().toIso8601String().split('T')[0];
       final snapshot = await docRef.get();
 
-      if (!snapshot.exists || snapshot['date'] != today) {
-        String newQuote = "Stay strong 💪 Keep moving";
+      String newQuote = "Stay strong 💪 Keep moving";
 
+      if (!snapshot.exists || snapshot['date'] != today) {
         try {
           final response = await http.get(Uri.parse("https://zenquotes.io/api/random"));
           if (response.statusCode == 200) {
@@ -97,61 +112,14 @@ class MotivationController extends GetxController {
       }
     } catch (e) {
       quotes.value = ["Stay strong 💪 Keep moving"];
-      print("Error fetching quote: $e");
-    } finally {
-      isLoadingQuote.value = false;
-    }
-  }
-
-  /// Load likes from Firestore
-  Future<void> _loadLikes() async {
-    if (auth.user == null) return;
-    final uid = auth.user!.uid;
-
-    try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('motivationLikes')
-          .get();
-
-      for (var doc in snapshot.docs) {
-        final index = int.tryParse(doc.id);
-        if (index != null) {
-          likedVideos[index] = doc['liked'] ?? false;
-          likeCounts[index] = likedVideos[index]! ? 1 : 0;
-        }
-      }
-    } catch (e) {
-      print("Error loading likes: $e");
-    }
-  }
-
-  /// Handle like button
-  Future<void> handleLike(int index) async {
-    if (auth.user == null) return;
-    final uid = auth.user!.uid;
-
-    likedVideos[index] = true;
-    likeCounts[index] = (likeCounts[index] ?? 0) + 1;
-    update();
-
-    try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('motivationLikes')
-          .doc(index.toString())
-          .set({'liked': true, 'timestamp': FieldValue.serverTimestamp()}, SetOptions(merge: true));
-    } catch (e) {
-      print("Error handling like: $e");
+      print("Quote fetch error: $e");
     }
   }
 
   @override
   void onClose() {
-    for (var vc in videoControllers.values) vc.dispose();
-    for (var ch in chewieControllers.values) ch.dispose();
+    videoControllers.values.forEach((vc) => vc.dispose());
+    chewieControllers.values.forEach((ch) => ch.dispose());
     super.onClose();
   }
 }
