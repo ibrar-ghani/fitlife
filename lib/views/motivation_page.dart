@@ -11,7 +11,7 @@ class MotivationPage extends StatefulWidget {
   State<MotivationPage> createState() => _MotivationPageState();
 }
 
-class _MotivationPageState extends State<MotivationPage> with SingleTickerProviderStateMixin {
+class _MotivationPageState extends State<MotivationPage> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final MotivationController controller = Get.put(MotivationController());
   final PageController _pageController = PageController();
 
@@ -19,9 +19,12 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
   late Animation<double> _heartAnimation;
   Map<int, bool> showHeart = {};
 
+  int currentPage = 0;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     _heartController = AnimationController(
       vsync: this,
@@ -34,6 +37,22 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
 
     for (int i = 0; i < controller.videoLinks.length; i++) {
       showHeart[i] = false;
+    }
+
+    // Initialize first video but DO NOT autoplay yet
+    controller.initializeVideo(0);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // Pause all videos when app goes into background
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      controller.pauseAllVideos();
+    } else if (state == AppLifecycleState.resumed) {
+      // Play current video if the user is on Motivation page
+      controller.videoControllers[currentPage]?.play();
     }
   }
 
@@ -72,12 +91,13 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
   }
 
   void _onPageChanged(int index) async {
-    // Pause all other videos
-    controller.videoControllers.forEach((key, vc) => vc.pause());
+    currentPage = index;
 
-    // Lazy initialize current video & play
-    await controller.initializeVideo(index);
-    controller.videoControllers[index]?.play();
+    // Pause all other videos
+    controller.pauseAllVideos();
+
+    // Lazy initialize current video & autoplay
+    await controller.initializeVideo(index, autoPlay: true);
   }
 
   @override
@@ -85,7 +105,6 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
     return Scaffold(
       backgroundColor: Colors.black,
       body: Obx(() {
-        // Observe chewieControllers keys (reactive)
         if (controller.chewieControllers.keys.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -172,7 +191,9 @@ class _MotivationPageState extends State<MotivationPage> with SingleTickerProvid
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _heartController.dispose();
+    controller.pauseAllVideos(); // Ensure no video plays in background
     super.dispose();
   }
 }

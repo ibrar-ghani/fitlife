@@ -7,17 +7,29 @@ import 'progress/progress_page.dart';
 import 'motivation_page.dart';
 import 'sleep_page.dart';
 
-class HomePage extends StatelessWidget {
-  HomePage({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
-  final BottomNavController navController =
-      Get.put(BottomNavController(), permanent: true);
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
 
-  // ✅ Cache heavy pages only
+class _HomePageState extends State<HomePage> {
+  late final BottomNavController navController;
+
+  // ✅ Cache heavy pages once
   final DashboardPage _dashboardPage = const DashboardPage();
   final ProgressPage _progressPage = const ProgressPage();
   final MotivationPage _motivationPage = const MotivationPage();
   final SleepPage _sleepPage = const SleepPage();
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ✅ Safe GetX injection (no duplicates)
+    navController = Get.put(BottomNavController(), permanent: true);
+  }
 
   Widget _buildPage(int index) {
     switch (index) {
@@ -36,8 +48,8 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(
-      () => Scaffold(
+    return Obx(() {
+      return Scaffold(
         appBar: AppBar(
           title: const Text(
             'FitLife',
@@ -46,6 +58,7 @@ class HomePage extends StatelessWidget {
           centerTitle: true,
         ),
 
+        // ✅ Only this rebuilds on tab change
         body: _buildPage(navController.currentIndex.value),
 
         bottomNavigationBar: BottomNavigationBar(
@@ -74,7 +87,7 @@ class HomePage extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
+    });
   }
 }

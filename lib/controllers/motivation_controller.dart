@@ -31,11 +31,12 @@ class MotivationController extends GetxController {
   void onInit() {
     super.onInit();
     _fetchQuote();
-    initializeVideo(0); // Load first video
+    // ❌ REMOVE auto-initialize here
+    // initializeVideo(0); 
   }
 
   /// Initialize video lazily
-  Future<void> initializeVideo(int index) async {
+  Future<void> initializeVideo(int index, {bool autoPlay = false}) async {
     if (videoControllers.containsKey(index)) return;
 
     try {
@@ -48,7 +49,7 @@ class MotivationController extends GetxController {
 
       final chewie = ChewieController(
         videoPlayerController: vc,
-        autoPlay: true,
+        autoPlay: autoPlay, // only auto-play if requested
         looping: true,
         showControls: false,
       );
@@ -58,6 +59,23 @@ class MotivationController extends GetxController {
     } catch (e) {
       print("Video $index initialization failed: $e");
     }
+  }
+
+  /// Play a video
+  void playVideo(int index) {
+    final vc = videoControllers[index];
+    if (vc != null && !vc.value.isPlaying) vc.play();
+  }
+
+  /// Pause a video
+  void pauseVideo(int index) {
+    final vc = videoControllers[index];
+    if (vc != null && vc.value.isPlaying) vc.pause();
+  }
+
+  /// Pause all videos
+  void pauseAllVideos() {
+    videoControllers.values.forEach((vc) => vc.pause());
   }
 
   /// Like a video
